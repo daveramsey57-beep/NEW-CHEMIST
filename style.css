@@ -169,28 +169,20 @@ body {
 
 /* Admin page background */
 body.admin-page {
-  background: linear-gradient(-45deg, #134e4a, #0d9488, #115e59, #0f766e);
-  background-size: 400% 400%;
-  animation: adminGradient 15s ease infinite;
-}
-
-@keyframes adminGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  background-image: url('image.avif'), url('image.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* User page background */
 body.user-page {
-  background: linear-gradient(-45deg, #0d9488, #14b8a6, #2dd4bf, #5eead4);
-  background-size: 400% 400%;
-  animation: userGradient 15s ease infinite;
-}
-
-@keyframes userGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  background-image: url('image.avif'), url('image.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 body::before {
@@ -200,7 +192,7 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.75);
   z-index: -1;
 }
 
