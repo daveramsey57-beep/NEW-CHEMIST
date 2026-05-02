@@ -9,29 +9,29 @@
 </head>
 <body>
   <script>
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      window.location.replace("login.html");
-    }
-    
-    // Set background based on role
-    var role = localStorage.getItem('role');
-    if (role === 'admin') {
-      document.body.className = 'admin-page';
-    } else {
-      document.body.className = 'user-page';
-    }
-    
-    window.addEventListener('popstate', function() {
-      window.location.href = 'login.html';
-    });
-    
-    // Update page title based on role
-    setTimeout(function() {
+    try {
+      if (localStorage.getItem("isLoggedIn") !== "true") {
+        window.location.replace("login.html");
+      }
+      
+      // Set background based on role
       var role = localStorage.getItem('role');
-      document.title = 'NEW CHEMIST - ' + (role === 'admin' ? 'Admin Dashboard' : 'User Dashboard');
-    }, 100);
-    
-    history.pushState(null, '', window.location.href);
+      if (role === 'admin') {
+        document.body.className = 'admin-page';
+      } else {
+        document.body.className = 'user-page';
+      }
+      
+      window.addEventListener('popstate', function() {
+        window.location.href = 'login.html';
+      });
+      
+      history.pushState(null, '', window.location.href);
+    } catch(e) {
+      console.error('Error in inline script:', e);
+      // Show main app anyway for debugging
+      document.getElementById('mainApp').style.display = 'flex';
+    }
   </script>
   
   <!-- Login Page placeholder (hidden) -->
@@ -539,11 +539,11 @@
     </div>
   </div>
 
-<!-- Firebase Modular SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-
+<!-- Firebase Compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  console.log('Firebase scripts loading...');  
   const firebaseConfig = {
     apiKey: "AIzaSyA0s80j-0fyWnRtY27UF1TZIciIMMaCzbA",
     authDomain: "new-chemist.firebaseapp.com",
@@ -555,19 +555,20 @@
   };
 
   try {
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    console.log('Initializing Firebase with project:', firebaseConfig.projectId);
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(app);
     
     window.db = db;
-    window.collection = (colName) => collection(db, colName);
-    window.getDocs = (colRef) => getDocs(colRef);
-    window.doc = (colName, docId) => doc(db, colName, docId);
-    window.addDoc = (colRef, data) => addDoc(colRef, data);
-    window.updateDoc = (docRef, data) => updateDoc(docRef, data);
-    window.deleteDoc = (docRef) => deleteDoc(docRef);
+    window.collection = (colName) => db.collection(colName);
+    window.getDocs = (colRef) => colRef.get();
+    window.doc = (colName, docId) => db.collection(colName).doc(docId);
+    window.addDoc = (colRef, data) => colRef.add(data);
+    window.updateDoc = (docRef, data) => docRef.update(data);
+    window.deleteDoc = (docRef) => docRef.delete();
     
     window.firebaseReady = true;
-    console.log('Firebase initialized successfully! Project: new-chemist');
+    console.log('Firebase initialized successfully!');
   } catch (e) {
     console.error('Firebase initialization error:', e);
     window.firebaseReady = false;
