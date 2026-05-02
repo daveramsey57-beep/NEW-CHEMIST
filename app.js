@@ -145,15 +145,15 @@ async function waitForFirebase() {
     console.log('Waiting for Firebase...');
     let attempts = 0;
     const maxAttempts = 30;
-    while (!window.firebaseReady && attempts < maxAttempts) {
+    while ((!window.db || !window.collection) && attempts < maxAttempts) {
         await new Promise(r => setTimeout(r, 500));
         attempts++;
-        console.log('Attempt:', attempts, '| firebaseReady:', window.firebaseReady);
+        console.log('Attempt:', attempts, '| db:', typeof window.db, '| collection:', typeof window.collection, '| firebaseReady:', window.firebaseReady);
     }
-    if (!window.firebaseReady || !window.db) {
+    if (!window.db || !window.collection) {
         console.error('FIREBASE NOT READY');
-        console.error('window.firebaseReady:', window.firebaseReady);
         console.error('window.db:', typeof window.db);
+        console.error('window.collection:', typeof window.collection);
         return false;
     } else {
         console.log('Firebase ready!');
@@ -162,9 +162,16 @@ async function waitForFirebase() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    if (!checkLoginStatus()) return;
-    
-    await showMainApp();
+    try {
+        console.log('DOM loaded, checking login status...');
+        if (!checkLoginStatus()) return;
+        
+        console.log('Login verified, showing main app...');
+        await showMainApp();
+    } catch(e) {
+        console.error('Initialization error:', e);
+        alert('Error loading app: ' + e.message);
+    }
 });
 
 function checkLoginStatus() {
@@ -191,21 +198,28 @@ function showLoginPage() {
 }
 
 async function showMainApp() {
+    console.log('showMainApp called');
     loginPage.style.display = "none";
     mainApp.style.display = "flex";
     mainApp.style.width = "100%";
     setupRoleBasedUI();
     
+    // Wait for Firebase with timeout
     const fbReady = await waitForFirebase();
     if (!fbReady) {
-        console.warn('Using default data - Firebase not available');
+        console.warn('Firebase not available - continuing with empty data');
     }
     
-    await initData();
-    setupNavigation();
-    setCurrentDate();
-    await loadAll();
-    loadAdminPages();
+    try {
+        await initData();
+        setupNavigation();
+        setCurrentDate();
+        await loadAll();
+        loadAdminPages();
+        console.log('App initialized successfully');
+    } catch(e) {
+        console.error('Error during app initialization:', e);
+    }
 }
 
 function setupRoleBasedUI() {
@@ -1009,6 +1023,4 @@ function toggleMobileMenu() {
 }
 
 window.addEventListener('resize', handleMobileMenu);
-window.addEventListener('firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+window.addEventListener('
