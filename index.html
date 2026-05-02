@@ -539,56 +539,40 @@
     </div>
   </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" onerror="console.error('Failed to load firebase-app-compat.js from gstatic.com'); window.firebaseLoadError=true"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" onerror="console.error('Failed to load firebase-firestore-compat.js from gstatic.com'); window.firebaseLoadError=true"></script>
-  <script>
-    console.log('Firebase scripts loading...');
-    if (window.firebaseLoadError) {
-      console.error('ERROR: Firebase SDK failed to load from CDN');
-      console.error('This means gstatic.com may be blocked by firewall/VPN');
-      window.db = null;
-    } else {
-      try {
-        const firebaseConfig = {
-          apiKey: "AIzaSyAVgi6D3jFz_oduCXKANK5aehTOPudaqg8",
-          authDomain: "vicmed-chemist-508d4.firebaseapp.com",
-          projectId: "vicmed-chemist-508d4",
-          storageBucket: "vicmed-chemist-508d4.firebasestorage.app",
-          messagingSenderId: "382872503876",
-          appId: "1:382872503876:web:4b5dcf3de760470f5c9e11",
-          measurementId: "G-4EHFW0H7RY"
-        };
+<!-- Firebase Modular SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-         console.log('Initializing Firebase app with config:', firebaseConfig.projectId);
-         console.log('Welcome to NEW CHEMIST - Pharmacy Management System');
-        const app = firebase.initializeApp(firebaseConfig);
-        console.log('Firebase app initialized:', app.name);
-        
-        console.log('Initializing Firestore...');
-        const db = firebase.firestore(app);
-        
-        window.db = db;
-        window.collection = (colName) => db.collection(colName);
-        window.getDocs = (colRef) => colRef.get();
-        window.doc = (colName, docId) => db.collection(colName).doc(docId);
-        window.addDoc = (colRef, data) => colRef.add(data);
-        window.updateDoc = (docRef, data) => docRef.update(data);
-        window.deleteDoc = (docRef) => docRef.delete();
-        console.log('Firebase Firestore ready! db:', db);
-        
-        console.log('Testing Firestore functions:');
-        console.log('window.collection:', typeof window.collection);
-        console.log('window.getDocs:', typeof window.getDocs);
-      } catch (e) {
-        console.error('ERROR initializing Firebase:', e.message);
-        console.error(e.stack);
-        window.db = null;
-      }
-    }
-  </script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA0s80j-0fyWnRtY27UF1TZIciIMMaCzbA",
+    authDomain: "new-chemist.firebaseapp.com",
+    projectId: "new-chemist",
+    storageBucket: "new-chemist.firebasestorage.app",
+    messagingSenderId: "1009551643410",
+    appId: "1:1009551643410:web:0b78e6e1571b54efa899cb",
+    measurementId: "G-WJTGP4YBG8"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    window.db = db;
+    window.collection = (colName) => collection(db, colName);
+    window.getDocs = (colRef) => getDocs(colRef);
+    window.doc = (colName, docId) => doc(db, colName, docId);
+    window.addDoc = (colRef, data) => addDoc(colRef, data);
+    window.updateDoc = (docRef, data) => updateDoc(docRef, data);
+    window.deleteDoc = (docRef) => deleteDoc(docRef);
+    
+    window.firebaseReady = true;
+    console.log('Firebase initialized successfully! Project: new-chemist');
+  } catch (e) {
+    console.error('Firebase initialization error:', e);
+    window.firebaseReady = false;
+  }
+</script>
   <script src="app.js"></script>
 </body>
-</html>
-
 </html>
