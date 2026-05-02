@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - New Chemist</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        body {
+            background: linear-gradient(-45deg, #134e4a, #0d9488, #115e59, #0f766e);
+            background-size: 400% 400%;
+            animation: loginGradient 15s ease infinite;
+        }
+        
+        @keyframes loginGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: -1;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .role-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .role-card {
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .role-card:hover {
+            border-color: #0d9488;
+            background: #f0fdfa;
+        }
+        .role-card.selected {
+            border-color: #0d9488;
+            background: #ccfbf1;
+        }
+        .role-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .role-card.user-card i { color: #0d9488; }
+        .role-card.admin-card i { color: #7c3aed; }
+        .role-card span {
+            display: block;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .role-card small {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        .user-role { color: #0d9488; }
+        .admin-role { color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fa-solid fa-pills"></i>
+                <h1>NEW CHEMIST</h1>
+                <p>Pharmacy Management System</p>
+            </div>
+
+            <div class="role-selection">
+                <div class="role-card user-card" onclick="selectRole('user')">
+                    <i class="fa-solid fa-user"></i>
+                    <span>User</span>
+                    <small>Sell Only</small>
+                </div>
+                <div class="role-card admin-card" onclick="selectRole('admin')">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Admin</span>
+                    <small>Full Access</small>
+                </div>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-at"></i>
+                        <input type="text" id="username" placeholder="Enter username" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" placeholder="Enter password" required />
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword()"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login">
+                    <i class="fa-solid fa-sign-in-alt"></i> Login
+                </button>
+                <p id="loginError" class="error-message"></p>
+            </form>
+
+            <p style="text-align: center; margin-top: 20px; color: #64748b; font-size: 0.85rem;">
+                <b>User:</b> @user001 / user254<br>
+                <b>Admin:</b> @admin2047 / dave247
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Clear any existing session when arriving at login page
+        if (window.location.href.includes('login.html')) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('role');
+        }
+        
+        let selectedRole = 'user';
+        
+        function selectRole(role) {
+            selectedRole = role;
+            document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
+            if (role === 'user') {
+                document.querySelector('.user-card').classList.add('selected');
+            } else {
+                document.querySelector('.admin-card').classList.add('selected');
+            }
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        selectRole('user');
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('loginError');
+
+            const validUsers = {
+                '@user001': 'user254',
+                '@admin2047': 'dave247'
+            };
+
+            if (validUsers[username] && validUsers[username] === password) {
+                const isAdmin = username === '@admin2047';
+                localStorage.setItem('role', isAdmin ? 'admin' : 'user');
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('username', username);
+                
+                // Small delay to ensure localStorage is saved
+                setTimeout(function() {
+                    window.location.href = 'index.html?t=' + new Date().getTime();
+                }, 100);
+            } else {
+                errorMessage.textContent = 'Invalid username or password';
+                setTimeout(() => { errorMessage.textContent = ''; }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
