@@ -1,6 +1,8 @@
 // ===== State & Data =====
 let allDrugs = [];
 let allSales = [];
+let allServices = [];
+let allReceipts = [];
 const MIN_STOCK = 5;
 let currentRole = 'user';
 const SESSION_TIMEOUT = 30 * 60 * 1000;
@@ -48,25 +50,80 @@ const drugForm = document.getElementById("drugForm");
 const editDrugId = document.getElementById("editDrugId");
 const modalTitle = document.getElementById("modalTitle");
 
+// Service modal elements
+const serviceModal = document.getElementById("serviceModal");
+const serviceForm = document.getElementById("serviceForm");
+const editServiceId = document.getElementById("editServiceId");
+const serviceModalTitle = document.getElementById("serviceModalTitle");
+
+// Receipt modal
+const receiptModal = document.getElementById("receiptModal");
+
 // ===== Firebase Functions =====
 async function loadDrugsFromFirebase() {
     try {
-        console.log('Loading drugs from Firebase, db:', window.db);
-        if (!window.db) {
-            console.error('loadDrugsFromFirebase: window.db is null/undefined');
-            throw new Error('Firebase not ready');
-        }
+        if (!window.db) throw new Error('Firebase not ready');
         const drugsRef = window.collection('drugs');
         const snapshot = await window.getDocs(drugsRef);
         allDrugs = [];
         snapshot.forEach(doc => {
-            allDrugs.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            allDrugs.push({
+                id: doc.id,
+                name: data.name,
+                category: data.category,
+                quantity: data.quantity,
+                price: data.price,
+                expiry: data.expiry
+            });
         });
-        console.log('Loaded drugs count:', allDrugs.length);
     } catch (e) {
-        console.error('Error loading drugs:', e);
         console.log('Loading default drugs (Firebase error)');
         allDrugs = getDefaultDrugs();
+    }
+}
+
+async function loadServicesFromFirebase() {
+    try {
+        if (!window.db) throw new Error('Firebase not ready');
+        const servicesRef = window.collection('services');
+        const snapshot = await window.getDocs(servicesRef);
+        allServices = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allServices.push({
+                id: doc.id,
+                name: data.name,
+                price: data.price
+            });
+        });
+    } catch (e) {
+        console.log('No services found, using defaults');
+        allServices = getDefaultServices();
+    }
+}
+
+async function loadReceiptsFromFirebase() {
+    try {
+        if (!window.db) throw new Error('Firebase not ready');
+        const receiptsRef = window.collection('receipts');
+        const snapshot = await window.getDocs(receiptsRef);
+        allReceipts = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allReceipts.push({
+                id: doc.id,
+                itemName: data.itemName,
+                type: data.type,
+                quantity: data.quantity,
+                unitPrice: data.unitPrice,
+                totalPrice: data.totalPrice,
+                timestamp: data.timestamp
+            });
+        });
+    } catch (e) {
+        console.log('No receipts found');
+        allReceipts = [];
     }
 }
 
@@ -76,7 +133,17 @@ async function loadSalesFromFirebase() {
         const snapshot = await window.getDocs(salesRef);
         allSales = [];
         snapshot.forEach(doc => {
-            allSales.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            allSales.push({
+                id: doc.id,
+                drugId: data.drugId,
+                drugName: data.drugName,
+                category: data.category,
+                quantity: data.quantity,
+                price: data.price,
+                totalPrice: data.totalPrice,
+                timestamp: data.timestamp
+            });
         });
     } catch (e) {
         console.log('No sales yet');
@@ -85,22 +152,17 @@ async function loadSalesFromFirebase() {
 }
 
 async function saveDrugToFirebase(drug) {
-    console.log('saveDrugToFirebase called with:', drug);
     try {
         if (drug.id) {
-            console.log('Updating existing drug:', drug.id);
             const drugRef = window.doc('drugs', drug.id);
             await window.updateDoc(drugRef, drug);
-            console.log('Drug updated successfully');
         } else {
-            console.log('Adding new drug...');
             const drugsRef = window.collection('drugs');
             const docRef = await window.addDoc(drugsRef, drug);
-            console.log('Drug added successfully, docRef:', docRef.id);
+            drug.id = docRef.id;
         }
     } catch (e) {
         console.error('Firebase error: ' + e.message);
-        console.error(e);
     }
 }
 
@@ -119,51 +181,70 @@ async function saveSaleToFirebase(sale) {
 }
 
 async function deleteDrugFromFirebase(id) {
-    console.log('deleteDrugFromFirebase called with id:', id);
     try {
         const drugRef = window.doc('drugs', id);
         await window.deleteDoc(drugRef);
-        console.log('Drug deleted successfully');
     } catch (e) {
         console.error('Firebase error: ' + e.message);
     }
 }
 
 async function deleteSaleFromFirebase(id) {
-    console.log('deleteSaleFromFirebase called with id:', id);
     try {
         const saleRef = window.doc('sales', id);
         await window.deleteDoc(saleRef);
-        console.log('Sale deleted successfully');
     } catch (e) {
         console.error('Firebase error: ' + e.message);
     }
 }
 
+async function saveServiceToFirebase(service) {
+    try {
+        if (service.id) {
+            const serviceRef = window.doc('services', service.id);
+            await window.updateDoc(serviceRef, service);
+        } else {
+            const servicesRef = window.collection('services');
+            const docRef = await window.addDoc(servicesRef, service);
+            service.id = docRef.id;
+        }
+    } catch (e) {
+        console.error('Firebase error saving service: ' + e.message);
+    }
+}
+
+async function deleteServiceFromFirebase(id) {
+    try {
+        const serviceRef = window.doc('services', id);
+        await window.deleteDoc(serviceRef);
+    } catch (e) {
+        console.error('Firebase error deleting service: ' + e.message);
+    }
+}
+
+async function saveReceiptToFirebase(receipt) {
+    try {
+        const receiptsRef = window.collection('receipts');
+        const docRef = await window.addDoc(receiptsRef, receipt);
+        receipt.id = docRef.id;
+    } catch (e) {
+        console.error('Firebase error saving receipt: ' + e.message);
+    }
+}
+
 // ===== Init =====
 async function waitForFirebase() {
-    console.log('Waiting for Firebase...');
     let attempts = 0;
     const maxAttempts = 30;
     while ((!window.db || !window.collection) && attempts < maxAttempts) {
         await new Promise(r => setTimeout(r, 500));
         attempts++;
-        console.log('Attempt:', attempts, '| db:', typeof window.db, '| collection:', typeof window.collection);
     }
-    if (!window.db || !window.collection) {
-        console.error('FIREBASE NOT READY');
-        console.error('window.db:', typeof window.db);
-        console.error('window.collection:', typeof window.collection);
-        return false;
-    } else {
-        console.log('Firebase ready!');
-    }
-    return true;
+    return !!(window.db && window.collection);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     if (!checkLoginStatus()) return;
-    
     await showMainApp();
 });
 
@@ -209,22 +290,15 @@ async function showMainApp() {
 }
 
 function setupRoleBasedUI() {
-    const role = localStorage.getItem('role') || 'user';
-    const adminNav = document.getElementById('adminNavItems');
-    const userNav = document.getElementById('userNavItems');
-    const addDrugNavBtn = document.getElementById('addDrugNavBtn');
-    
-    if (role === 'admin') {
-        if (adminNav) adminNav.style.display = 'block';
-        if (userNav) userNav.style.display = 'none';
-        if (addDrugNavBtn) addDrugNavBtn.style.display = 'flex';
-    } else {
-        if (adminNav) adminNav.style.display = 'none';
-        if (userNav) userNav.style.display = 'block';
-        if (addDrugNavBtn) addDrugNavBtn.style.display = 'none';
-    }
-    
-    currentRole = role;
+    setTimeout(() => {
+        const role = getRole();
+        window.currentRole = role;
+        updateNavByRole();
+        
+        if (role !== 'admin') {
+            navigateTo('sell');
+        }
+    }, 100);
 }
 
 function loadAdminPages() {
@@ -268,10 +342,7 @@ window.addEventListener("beforeunload", function() {
 });
 
 window.addEventListener("pagehide", function(e) {
-    if (e.persisted) {
-        // Page is being cached (back/forward cache)
-    } else {
-        // Page is truly being discarded (tab close)
+    if (!e.persisted) {
         sessionStorage.removeItem("isLoggedIn");
         sessionStorage.removeItem("role");
         sessionStorage.removeItem("lastActivity");
@@ -282,6 +353,8 @@ window.addEventListener("pagehide", function(e) {
 async function initData() {
     await loadDrugsFromFirebase();
     await loadSalesFromFirebase();
+    await loadServicesFromFirebase();
+    await loadReceiptsFromFirebase();
 }
 
 function getDefaultDrugs() {
@@ -301,19 +374,28 @@ function getDefaultDrugs() {
     ];
 }
 
+function getDefaultServices() {
+    return [
+        { id: "s1", name: "Blood Pressure Check", price: 200 },
+        { id: "s2", name: "Blood Sugar Test", price: 300 },
+        { id: "s3", name: "Body Temperature Check", price: 100 },
+        { id: "s4", name: "Prescription Consultation", price: 500 }
+    ];
+}
+
 async function loadAll() {
     await loadDrugsFromFirebase();
     await loadSalesFromFirebase();
+    await loadServicesFromFirebase();
+    await loadReceiptsFromFirebase();
     loadDrugs();
     loadSalesData();
     updateSalesTotals();
     updateInventoryStats();
     renderRecentSales();
     renderStock();
-    console.log('loadAll complete, allDrugs length:', allDrugs.length);
-    if (allDrugs.length > 0) {
-        console.log('First drug:', allDrugs[0].name);
-    }
+    renderServices();
+    renderReceipts();
 }
 
 function setCurrentDate() {
@@ -341,7 +423,7 @@ function setupNavigation() {
 
 function navigateTo(page) {
     if (!isAdmin()) {
-        const userAllowedPages = ['dashboard', 'sell', 'sales', 'admin-panel'];
+        const userAllowedPages = ['dashboard', 'sell', 'sales', 'receipts', 'admin-panel'];
         if (!userAllowedPages.includes(page)) {
             page = 'dashboard';
         }
@@ -354,7 +436,8 @@ function navigateTo(page) {
     document.querySelectorAll(".page").forEach(p => {
         p.classList.remove("active");
     });
-    document.getElementById(`${page}-page`).classList.add("active");
+    const targetPage = document.getElementById(page + '-page');
+    if (targetPage) targetPage.classList.add("active");
     
     const sidebar = document.getElementById('sidebar');
     if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('mobile-open')) {
@@ -369,6 +452,10 @@ function navigateTo(page) {
         if (typeof renderRestockPage === 'function') renderRestockPage();
     } else if (page === "expiry") {
         if (typeof renderExpiryPage === 'function') renderExpiryPage();
+    } else if (page === "services") {
+        renderServices();
+    } else if (page === "receipts") {
+        renderReceipts();
     } else if (page === "admin-panel") {
         populateAdminPanel();
     }
@@ -442,12 +529,21 @@ async function sellDrug() {
         timestamp: new Date().toISOString()
     };
 
-    // Save to Firebase
     await saveSaleToFirebase(sale);
     
-    // Update drug quantity
     drug.quantity = (drug.quantity ?? 0) - qty;
     await saveDrugToFirebase(drug);
+
+    // Generate receipt
+    const receipt = {
+        itemName: drug.name,
+        type: 'Drug Sale',
+        quantity: qty,
+        unitPrice: drug.price,
+        totalPrice,
+        timestamp: new Date().toISOString()
+    };
+    await saveReceiptToFirebase(receipt);
 
     alert(`Sold ${qty} x ${drug.name} for ${formatKsh(totalPrice)}`);
     qtyInput.value = "";
@@ -531,34 +627,24 @@ function renderRecentSales() {
 }
 
 async function deleteSale(id) {
-    console.log('=== deleteSale START ===');
-    console.log('id:', id, 'type:', typeof id);
     if (!confirm("Delete this sale? Stock will be restored to inventory.")) {
-        console.log('User cancelled');
         return;
     }
-    console.log('User confirmed, deleting...');
     
-    // Find the sale to get drugId and quantity
     const sale = allSales.find(s => s.id === id);
     if (!sale) {
         alert("Sale not found!");
         return;
     }
     
-    // Restore quantity to drug inventory
     const drug = allDrugs.find(d => d.id === sale.drugId);
     if (drug) {
         drug.quantity = (drug.quantity ?? 0) + sale.quantity;
         await saveDrugToFirebase(drug);
-        console.log('Restored', sale.quantity, 'units to', drug.name);
     }
     
-    // Delete the sale
     await deleteSaleFromFirebase(id);
-    console.log('After deleteSaleFromFirebase');
     await loadAll();
-    console.log('=== deleteSale COMPLETE ===');
 }
 
 // Sales filtering
@@ -651,12 +737,8 @@ function updateInventoryStats() {
 // ===== Stock Available Page =====
 function renderStock() {
     const stockBody = document.getElementById("stockBody");
-    if (!stockBody) {
-        console.error('stockBody element not found');
-        return;
-    }
+    if (!stockBody) return;
     
-    console.log('renderStock called, allDrugs length:', allDrugs.length);
     stockBody.innerHTML = "";
     
     if (allDrugs.length === 0) {
@@ -737,7 +819,6 @@ if (stockSearchBtn) {
 // ===== Restock Page =====
 function renderRestockPage() {
     const restockDrugSelect = document.getElementById("restockDrugSelect");
-    const restockSearch = document.getElementById("restockSearch");
     if (!restockDrugSelect) return;
     
     restockDrugSelect.innerHTML = '<option value="">Select a drug to restock</option>';
@@ -753,7 +834,6 @@ function renderRestockPage() {
         restockDrugSelect.appendChild(option);
     });
     
-    // Show low stock notice
     const lowStockList = document.getElementById("lowStockList");
     const lowStockNotice = document.getElementById("lowStockNotice");
     if (lowStockList && lowStockNotice) {
@@ -840,17 +920,14 @@ if (restockForm) {
             return;
         }
         
-        // Update drug quantity
         drug.quantity = (drug.quantity ?? 0) + quantityToAdd;
         await saveDrugToFirebase(drug);
         
         alert(`Successfully restocked ${drug.name} with ${quantityToAdd} units. New stock: ${drug.quantity}`);
         
-        // Reset form
         restockForm.reset();
         document.getElementById("restockCurrentStock").value = '';
         
-        // Refresh the page
         renderRestockPage();
     });
 }
@@ -883,7 +960,6 @@ function closeModal() {
 
 async function saveDrug(e) {
     e.preventDefault();
-    console.log('saveDrug function triggered');
     
     const id = editDrugId.value;
     const name = document.getElementById("drugName").value;
@@ -892,8 +968,6 @@ async function saveDrug(e) {
     const quantity = Number(document.getElementById("drugQuantity").value);
     const expiry = document.getElementById("drugExpiry").value;
     
-    console.log('Form values - id:', id, 'name:', name, 'category:', category, 'price:', price, 'quantity:', quantity, 'expiry:', expiry);
-
     if (id) {
         const drug = allDrugs.find(d => d.id === id);
         if (drug) {
@@ -905,14 +979,7 @@ async function saveDrug(e) {
             await saveDrugToFirebase(drug);
         }
     } else {
-        const newDrug = {
-            name,
-            category,
-            price,
-            quantity,
-            expiry: expiry || null
-        };
-        console.log('Creating new drug with data:', newDrug);
+        const newDrug = { name, category, price, quantity, expiry: expiry || null };
         await saveDrugToFirebase(newDrug);
     }
 
@@ -923,20 +990,166 @@ async function saveDrug(e) {
 }
 
 async function deleteDrug(id) {
-    console.log('=== deleteDrug START ===');
-    console.log('id:', id, 'type:', typeof id);
-    if (!confirm("Delete this drug from inventory?")) {
-        console.log('User cancelled');
-        return;
-    }
-    console.log('User confirmed, deleting...');
+    if (!confirm("Delete this drug from inventory?")) return;
     await deleteDrugFromFirebase(id);
-    console.log('After deleteDrugFromFirebase');
     await loadDrugsFromFirebase();
-    console.log('After loadDrugsFromFirebase');
     loadDrugs();
     updateInventoryStats();
-    console.log('=== deleteDrug COMPLETE ===');
+}
+
+// ===== Services =====
+function renderServices() {
+    const servicesBody = document.getElementById("servicesBody");
+    if (!servicesBody) return;
+
+    servicesBody.innerHTML = "";
+    allServices.forEach(service => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${service.name}</strong></td>
+            <td>${formatKsh(service.price)}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="action-btn edit" onclick="openEditService('${service.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="action-btn delete" onclick="deleteService('${service.id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </td>
+        `;
+        servicesBody.appendChild(row);
+    });
+
+    if (allServices.length === 0) {
+        servicesBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:40px;">No services added yet</td></tr>';
+    }
+}
+
+function showAddServiceModal() {
+    serviceModalTitle.textContent = "Add New Service";
+    editServiceId.value = "";
+    serviceForm.reset();
+    serviceModal.classList.add("active");
+}
+
+function openEditService(id) {
+    const service = allServices.find(s => s.id === id);
+    if (!service) return;
+
+    serviceModalTitle.textContent = "Edit Service";
+    editServiceId.value = service.id;
+    document.getElementById("serviceName").value = service.name;
+    document.getElementById("servicePrice").value = service.price;
+    serviceModal.classList.add("active");
+}
+
+function closeServiceModal() {
+    serviceModal.classList.remove("active");
+}
+
+async function saveService(e) {
+    e.preventDefault();
+    const id = editServiceId.value;
+    const name = document.getElementById("serviceName").value;
+    const price = Number(document.getElementById("servicePrice").value);
+
+    if (id) {
+        const service = allServices.find(s => s.id === id);
+        if (service) {
+            service.name = name;
+            service.price = price;
+            await saveServiceToFirebase(service);
+        }
+    } else {
+        const newService = { name, price };
+        allServices.push(newService);
+        await saveServiceToFirebase(newService);
+    }
+
+    closeServiceModal();
+    await loadServicesFromFirebase();
+    renderServices();
+}
+
+async function deleteService(id) {
+    if (!confirm("Delete this service?")) return;
+    await deleteServiceFromFirebase(id);
+    await loadServicesFromFirebase();
+    renderServices();
+}
+
+// ===== Receipts =====
+function renderReceipts() {
+    const receiptsBody = document.getElementById("receiptsBody");
+    if (!receiptsBody) return;
+
+    receiptsBody.innerHTML = "";
+    const sortedReceipts = [...allReceipts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    sortedReceipts.forEach(receipt => {
+        const row = document.createElement("tr");
+        const date = new Date(receipt.timestamp).toLocaleDateString();
+        row.innerHTML = `
+            <td><strong>${receipt.id}</strong></td>
+            <td>${receipt.itemName}</td>
+            <td>${formatKsh(receipt.totalPrice)}</td>
+            <td>${date}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="action-btn edit" onclick="viewReceipt('${receipt.id}')"><i class="fa-solid fa-eye"></i></button>
+                </div>
+            </td>
+        `;
+        receiptsBody.appendChild(row);
+    });
+
+    if (sortedReceipts.length === 0) {
+        receiptsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:40px;">No receipts generated yet</td></tr>';
+    }
+}
+
+function viewReceipt(id) {
+    const receipt = allReceipts.find(r => r.id === id);
+    if (!receipt) return;
+
+    const receiptContent = document.getElementById("receiptContent");
+    const date = new Date(receipt.timestamp).toLocaleString();
+
+    receiptContent.innerHTML = `
+        <div style="text-align: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">New Chemist</h3>
+            <p style="color: #666; font-size: 0.85rem;">Your Health, Our Priority</p>
+        </div>
+        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
+        <p><strong>Receipt ID:</strong> ${receipt.id}</p>
+        <p><strong>Date:</strong> ${date}</p>
+        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
+        <p><strong>Item:</strong> ${receipt.itemName}</p>
+        <p><strong>Type:</strong> ${receipt.type || 'Sale'}</p>
+        <p><strong>Quantity:</strong> ${receipt.quantity || 1}</p>
+        <p><strong>Unit Price:</strong> ${formatKsh(receipt.unitPrice || receipt.totalPrice)}</p>
+        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
+        <p style="font-size: 1.1rem;"><strong>Total: ${formatKsh(receipt.totalPrice)}</strong></p>
+        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
+        <p style="text-align: center; color: #666; font-size: 0.8rem;">Thank you for your business!</p>
+    `;
+
+    receiptModal.classList.add("active");
+}
+
+function closeReceiptModal() {
+    receiptModal.classList.remove("active");
+}
+
+function printReceipt() {
+    const receiptContent = document.getElementById("receiptContent").innerHTML;
+    const printWindow = window.open('', '', 'height=600,width=400');
+    printWindow.document.write('<html><head><title>Receipt</title>');
+    printWindow.document.write('<style>body{font-family:monospace;padding:20px;} p{margin:4px 0;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(receiptContent);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
 }
 
 // ===== Utilities =====
@@ -948,8 +1161,11 @@ function formatKsh(amount) {
 function updateNavByRole() {
     const isUserAdmin = isAdmin();
     
-    document.getElementById('userNavItems').style.display = isUserAdmin ? 'none' : 'flex';
-    document.getElementById('adminNavItems').style.display = isUserAdmin ? 'flex' : 'none';
+    const userNav = document.getElementById('userNavItems');
+    const adminNav = document.getElementById('adminNavItems');
+    if (userNav) userNav.style.display = isUserAdmin ? 'none' : 'flex';
+    if (adminNav) adminNav.style.display = isUserAdmin ? 'flex' : 'none';
+    
     document.getElementById('userInfoName').textContent = isUserAdmin ? 'Admin User' : 'Chemist User';
     
     const addDrugBtn = document.getElementById('addDrugNavBtn');
@@ -961,21 +1177,19 @@ function updateNavByRole() {
     if (inventoryAddBtn) {
         inventoryAddBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
     }
+    
+    const servicesNavBtn = document.getElementById('servicesNavBtn');
+    if (servicesNavBtn) {
+        servicesNavBtn.style.display = isUserAdmin ? 'flex' : 'none';
+    }
+    
+    const addServiceBtn = document.getElementById('addServiceBtn');
+    if (addServiceBtn) {
+        addServiceBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
+    }
 }
 
-function setupRoleBasedUI() {
-    setTimeout(() => {
-        const role = getRole();
-        window.currentRole = role;
-        updateNavByRole();
-        
-        if (role !== 'admin') {
-            navigateTo('sell');
-        }
-    }, 100);
-}
-
-// Make functions global
+// ===== Make functions global =====
 window.sellDrug = sellDrug;
 window.deleteSale = deleteSale;
 window.showAddDrugModal = showAddDrugModal;
@@ -990,22 +1204,26 @@ window.isAdmin = isAdmin;
 window.updateNavByRole = updateNavByRole;
 window.setupRoleBasedUI = setupRoleBasedUI;
 window.toggleMobileMenu = toggleMobileMenu;
+window.showAddServiceModal = showAddServiceModal;
+window.openEditService = openEditService;
+window.closeServiceModal = closeServiceModal;
+window.saveService = saveService;
+window.deleteService = deleteService;
+window.viewReceipt = viewReceipt;
+window.closeReceiptModal = closeReceiptModal;
+window.printReceipt = printReceipt;
 
-// Mobile menu handler
+// ===== Mobile menu handler =====
 function handleMobileMenu() {
-    const menuBtn = document.getElementById('mobileMenuBtn');
+    const menuBtn = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     
     if (window.innerWidth <= 768) {
-        if (menuBtn) menuBtn.style.display = 'flex';
-        if (sidebar) {
-            sidebar.classList.remove('mobile-open');
-        }
+        if (menuBtn) menuBtn.style.display = 'block';
     } else {
         if (menuBtn) menuBtn.style.display = 'none';
         if (sidebar) {
-            sidebar.classList.remove('mobile-open');
-            sidebar.style.left = '';
+            sidebar.classList.remove('show-sidebar');
         }
     }
 }
@@ -1013,11 +1231,16 @@ function handleMobileMenu() {
 function toggleMobileMenu() {
     var sidebar = document.getElementById('sidebar');
     if (sidebar) {
-        sidebar.classList.toggle('mobile-open');
-        var overlay = sidebar.querySelector('.sidebar-overlay');
-        if (overlay) overlay.classList.toggle('active');
+        sidebar.classList.toggle('show-sidebar');
     }
 }
 
 window.addEventListener('resize', handleMobileMenu);
 window.addEventListener('DOMContentLoaded', handleMobileMenu);
+
+function populateAdminPanel() {
+    const adminUsername = document.getElementById('adminUsername');
+    const adminRole = document.getElementById('adminRole');
+    if (adminUsername) adminUsername.value = localStorage.getItem('username') || 'Admin User';
+    if (adminRole) adminRole.value = getRole();
+}
