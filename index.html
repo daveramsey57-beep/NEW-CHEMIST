@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -13,7 +13,6 @@
       window.location.replace("login.html");
     }
     
-    // Set background based on role
     var role = localStorage.getItem('role');
     if (role === 'admin') {
       document.body.className = 'admin-page';
@@ -28,19 +27,15 @@
     history.pushState(null, '', window.location.href);
   </script>
   
-  <!-- Login Page placeholder (hidden) -->
   <div id="loginPage" style="display: none;"></div>
 
-  <!-- Main App (hidden until login) -->
   <div id="mainApp" class="app-container" style="display: none;">
-    <!-- Sidebar always visible on PC -->
     <aside class="sidebar" id="sidebar">
       <div class="logo">
         <i class="fa-solid fa-pills"></i>
         <span>New Chemist</span>
       </div>
       
-      <!-- Admin Navigation -->
       <nav class="nav-menu" id="adminNavItems" style="display: none;">
         <a href="#" class="nav-item active" data-page="dashboard">
           <i class="fa-solid fa-chart-line"></i>
@@ -88,7 +83,6 @@
         </a>
       </nav>
       
-      <!-- User Navigation (limited access) -->
       <nav class="nav-menu" id="userNavItems" style="display: none;">
         <a href="#" class="nav-item active" data-page="dashboard">
           <i class="fa-solid fa-chart-line"></i>
@@ -119,7 +113,6 @@
       </div>
     </aside>
 
-    <!-- Mobile Toggle Button -->
     <button id="menuToggle" onclick="toggleSidebar()" style="display:none;position:fixed;top:10px;left:10px;z-index:2000;background:#2563eb;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:18px;">
       <i class="fa-solid fa-bars"></i>
     </button>
@@ -142,9 +135,7 @@
       window.addEventListener('resize', checkMobile);
     </script>
 
-    <!-- Main Content -->
     <main class="main-content">
-      <!-- Dashboard Page -->
       <section id="dashboard-page" class="page active">
         <header class="page-header">
           <h1><i class="fa-solid fa-chart-line"></i> Dashboard</h1>
@@ -153,36 +144,28 @@
 
         <div class="dashboard-stats">
           <div class="stat-card total-sales">
-            <div class="stat-icon">
-              <i class="fa-solid fa-coins"></i>
-            </div>
+            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
             <div class="stat-info">
               <span class="stat-label">Total Sales</span>
               <span class="stat-value" id="totalSales">KSh 0</span>
             </div>
           </div>
           <div class="stat-card daily">
-            <div class="stat-icon">
-              <i class="fa-solid fa-calendar-day"></i>
-            </div>
+            <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
             <div class="stat-info">
               <span class="stat-label">Today's Sales</span>
               <span class="stat-value" id="dailyTotal">KSh 0</span>
             </div>
           </div>
           <div class="stat-card monthly">
-            <div class="stat-icon">
-              <i class="fa-solid fa-calendar"></i>
-            </div>
+            <div class="stat-icon"><i class="fa-solid fa-calendar"></i></div>
             <div class="stat-info">
               <span class="stat-label">This Month</span>
               <span class="stat-value" id="monthlyTotal">KSh 0</span>
             </div>
           </div>
           <div class="stat-card yearly">
-            <div class="stat-icon">
-              <i class="fa-solid fa-calendar-check"></i>
-            </div>
+            <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
             <div class="stat-info">
               <span class="stat-label">This Year</span>
               <span class="stat-value" id="yearlyTotal">KSh 0</span>
@@ -209,12 +192,10 @@
         </div>
       </section>
 
-      <!-- Sell Drugs Page -->
       <section id="sell-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-cash-register"></i> Sell Drugs</h1>
         </header>
-
         <div class="sell-form-container">
           <div class="form-card">
             <h3>New Sale</h3>
@@ -237,12 +218,10 @@
         </div>
       </section>
 
-      <!-- Sales History Page -->
       <section id="sales-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-receipt"></i> Sales History</h1>
         </header>
-
         <div class="filters-section">
           <div class="date-filters">
             <div class="filter-group">
@@ -261,7 +240,6 @@
             </button>
           </div>
         </div>
-
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -279,12 +257,10 @@
         </div>
       </section>
 
-      <!-- Receipts Page -->
       <section id="receipts-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-receipt"></i> Receipts</h1>
         </header>
-
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -301,7 +277,6 @@
         </div>
       </section>
 
-      <!-- Inventory Page -->
       <section id="inventory-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-boxes-stacked"></i> Inventory</h1>
@@ -309,7 +284,6 @@
             <i class="fa-solid fa-plus"></i> Add Drug
           </button>
         </header>
-
         <div class="inventory-stats">
           <div class="inv-stat">
             <span class="inv-value" id="totalDrugs">0</span>
@@ -324,7 +298,6 @@
             <span class="inv-label">Total Value</span>
           </div>
         </div>
-
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -342,19 +315,16 @@
         </div>
       </section>
 
-      <!-- Stock Available Page (Admin Only) -->
       <section id="stock-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-warehouse"></i> Stock Available</h1>
         </header>
-        
         <div class="form-group search-group">
           <input type="text" id="stockSearch" placeholder="Search by drug name or category..." class="search-input" />
           <button type="button" id="stockSearchBtn" class="btn-search">
             <i class="fa-solid fa-search"></i> Search
           </button>
         </div>
-
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -371,18 +341,15 @@
         </div>
       </section>
 
-      <!-- Restock Page (Admin Only) -->
       <section id="restock-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-boxes-packing"></i> Restock Drugs</h1>
         </header>
-
         <div class="form-card" style="max-width: 600px;">
           <div class="low-stock-notice" id="lowStockNotice" style="display: none;">
             <h3><i class="fa-solid fa-triangle-exclamation"></i> Low Stock Items</h3>
             <ul id="lowStockList"></ul>
           </div>
-
           <form id="restockForm">
             <div class="form-group">
               <label>Select Drug</label>
@@ -410,19 +377,16 @@
         </div>
       </section>
 
-      <!-- Expiry Dates Page (Admin Only) -->
       <section id="expiry-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-calendar-xmark"></i> Expiry Dates</h1>
         </header>
-
         <div class="filter-buttons">
           <button class="filter-btn active" data-filter="all">All</button>
           <button class="filter-btn" data-filter="expired">Expired</button>
           <button class="filter-btn" data-filter="soon">Expiring Soon (30 days)</button>
           <button class="filter-btn" data-filter="ok">OK</button>
         </div>
-
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -439,12 +403,10 @@
         </div>
       </section>
 
-      <!-- Add Drug Page (Admin Only) -->
       <section id="add-drug-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-plus-circle"></i> Add New Drug</h1>
         </header>
-
         <form id="addDrugPageForm" class="form-card" style="max-width: 600px;">
           <div class="form-group">
             <label>Drug Name</label>
@@ -477,62 +439,53 @@
           <button type="submit" class="btn-primary">
             <i class="fa-solid fa-save"></i> Save Drug
           </button>
-      </form>
-    </section>
+        </form>
+      </section>
 
-    <!-- Services Page (Admin Only) -->
-    <section id="services-page" class="page">
-      <header class="page-header">
-        <h1><i class="fa-solid fa-handshake"></i> Manage Services</h1>
-        <button class="btn-primary" onclick="showAddServiceModal()" id="addServiceBtn" style="display: none;">
-          <i class="fa-solid fa-plus"></i> Add Service
-        </button>
-      </header>
+      <section id="services-page" class="page">
+        <header class="page-header">
+          <h1><i class="fa-solid fa-handshake"></i> Manage Services</h1>
+          <button class="btn-primary" onclick="showAddServiceModal()" id="addServiceBtn" style="display: none;">
+            <i class="fa-solid fa-plus"></i> Add Service
+          </button>
+        </header>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Price (KSh)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="servicesBody"></tbody>
+          </table>
+        </div>
+      </section>
 
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Price (KSh)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="servicesBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Admin Panel Page -->
       <section id="admin-panel-page" class="page">
         <header class="page-header">
           <h1><i class="fa-solid fa-gear"></i> Admin Panel</h1>
         </header>
-
         <div class="form-card" style="max-width: 600px;">
           <h3>Account Settings</h3>
-          
           <div class="form-group">
             <label>Current User</label>
             <input type="text" id="adminUsername" class="form-input" readonly />
           </div>
-          
           <div class="form-group">
             <label>Role</label>
             <input type="text" id="adminRole" class="form-input" readonly />
           </div>
-          
           <div class="form-actions" style="margin-top: 24px;">
             <button class="btn-danger" onclick="logout()">
               <i class="fa-solid fa-sign-out-alt"></i> Logout
             </button>
           </div>
         </div>
-
         <div class="form-card" style="max-width: 600px; margin-top: 20px;">
           <h3>Session Info</h3>
           <p style="color: var(--gray-400); margin-bottom: 16px;">Manage your session and security settings.</p>
-          
           <div style="display: flex; align-items: center; gap: 12px;">
             <i class="fa-solid fa-shield-halved" style="font-size: 2rem; color: var(--primary);"></i>
             <div>
@@ -545,7 +498,6 @@
     </main>
   </div>
 
-  <!-- Modal for Add/Edit Drug -->
   <div id="drugModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -590,7 +542,6 @@
     </div>
   </div>
 
-  <!-- Modal for Add/Edit Service -->
   <div id="serviceModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -615,7 +566,6 @@
     </div>
   </div>
 
-  <!-- Receipt Modal -->
   <div id="receiptModal" class="modal">
     <div class="modal-content" style="max-width: 400px;">
       <div class="modal-header">
@@ -623,7 +573,6 @@
         <button class="close-modal" onclick="closeReceiptModal()">&times;</button>
       </div>
       <div id="receiptContent" style="padding: 24px; font-family: monospace;">
-        <!-- Receipt content will be injected here -->
       </div>
       <div class="form-actions">
         <button class="btn-primary" onclick="printReceipt()"><i class="fa-solid fa-print"></i> Print</button>
@@ -632,14 +581,11 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" onerror="console.error('Failed to load firebase-app-compat.js from gstatic.com'); window.firebaseLoadError=true"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" onerror="console.error('Failed to load firebase-firestore-compat.js from gstatic.com'); window.firebaseLoadError=true"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" onerror="console.error('Failed to load firebase-app-compat.js'); window.firebaseLoadError=true"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" onerror="console.error('Failed to load firebase-firestore-compat.js'); window.firebaseLoadError=true"></script>
   <script>
-    console.log('Firebase scripts loading...');
     if (window.firebaseLoadError) {
       console.error('ERROR: Firebase SDK failed to load from CDN');
-      console.error('This means gstatic.com may be blocked by firewall/VPN');
       window.db = null;
     } else {
       try {
@@ -652,12 +598,8 @@
           appId: "1:1009551643410:web:0b78e6e1571b54efa899cb",
           measurementId: "G-WJTGP4YBG8"
         };
-
-        console.log('Initializing Firebase app with config:', firebaseConfig.projectId);
-        const app = firebase.initializeApp(firebaseConfig);
-        console.log('Firebase app initialized:', app.name);
         
-        console.log('Initializing Firestore...');
+        const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(app);
         
         window.db = db;
@@ -667,14 +609,8 @@
         window.addDoc = (colRef, data) => colRef.add(data);
         window.updateDoc = (docRef, data) => docRef.update(data);
         window.deleteDoc = (docRef) => docRef.delete();
-        console.log('Firebase Firestore ready! db:', db);
-        
-        console.log('Testing Firestore functions:');
-        console.log('window.collection:', typeof window.collection);
-        console.log('window.getDocs:', typeof window.getDocs);
       } catch (e) {
         console.error('ERROR initializing Firebase:', e.message);
-        console.error(e.stack);
         window.db = null;
       }
     }
