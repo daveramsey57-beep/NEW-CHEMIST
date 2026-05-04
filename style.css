@@ -1009,6 +1009,46 @@ body::before {
   border-color: var(--primary);
 }
 
+/* ===== Summary Tabs ===== */
+.summary-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.summary-content {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  background: var(--gray-50);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.summary-card h3 {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin-bottom: 8px;
+}
+
+.summary-card p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
 /* ===== Expiry Status ===== */
 .expiry-expired { color: var(--danger); font-weight: 600; }
 .expiry-soon { color: var(--warning); font-weight: 600; }
