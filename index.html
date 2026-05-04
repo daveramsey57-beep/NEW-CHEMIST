@@ -578,6 +578,21 @@
             </div>
           </div>
         </div>
+        <div class="form-card" style="max-width: 600px; margin-top: 20px;">
+          <h3><i class="fa-solid fa-palette"></i> Appearance Settings</h3>
+          <div class="form-group">
+            <label>Dark Mode</label>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+              <i class="fa-solid fa-sun" style="color: #f59e0b;"></i>
+              <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)" style="opacity: 0; width: 0; height: 0;" />
+                <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: 0.3s; border-radius: 24px;"></span>
+              </label>
+              <i class="fa-solid fa-moon" style="color: #6366f1;"></i>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--gray-400); margin-top: 8px;">Toggle between light and dark theme</p>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -662,6 +677,45 @@
         <button class="btn-primary" onclick="printReceipt()"><i class="fa-solid fa-print"></i> Print</button>
         <button type="button" class="btn-outline" onclick="closeReceiptModal()">Close</button>
       </div>
+    </div>
+  </div>
+
+  <div id="expenseModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="expenseModalTitle">Add New Expense</h2>
+        <button class="close-modal" onclick="closeExpenseModal()">&times;</button>
+      </div>
+      <form id="expenseForm" onsubmit="saveExpense(event)">
+        <input type="hidden" id="editExpenseId" />
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="expenseDescription" required class="form-input" placeholder="Enter expense description" />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="expenseCategory" class="form-select">
+            <option value="Utilities">Utilities</option>
+            <option value="Rent">Rent</option>
+            <option value="Supplies">Supplies</option>
+            <option value="Salaries">Salaries</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (KSh)</label>
+          <input type="number" id="expenseAmount" required class="form-input" min="0" placeholder="Enter amount" />
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="expenseDate" class="form-input" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save Expense</button>
+          <button type="button" class="btn-outline" onclick="closeExpenseModal()">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
