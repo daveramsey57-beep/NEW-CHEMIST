@@ -40,14 +40,14 @@ const yearlyEl = document.getElementById("yearlyTotal");
 const currentDateEl = document.getElementById("currentDate");
 
 // Inventory stats
-const totaldrugsEl = document.getElementById("totaldrugs");
+const totalDrugsEl = document.getElementById("totalDrugs");
 const lowStockCountEl = document.getElementById("lowStockCount");
 const totalValueEl = document.getElementById("totalValue");
 
 // Modal elements
 const drugModal = document.getElementById("drugModal");
 const drugForm = document.getElementById("drugForm");
-const editdrugId = document.getElementById("editdrugId");
+const editDrugId = document.getElementById("editDrugId");
 const modalTitle = document.getElementById("modalTitle");
 
 // Service modal elements
@@ -60,7 +60,7 @@ const serviceModalTitle = document.getElementById("serviceModalTitle");
 const receiptModal = document.getElementById("receiptModal");
 
 // ===== Firebase Functions =====
-async function loaddrugsFromFirebase() {
+async function loadDrugsFromFirebase() {
     try {
         if (!window.db) throw new Error('Firebase not ready');
         const drugsRef = window.collection('drugs');
@@ -79,7 +79,7 @@ async function loaddrugsFromFirebase() {
         });
     } catch (e) {
         console.log('Loading default drugs (Firebase error)');
-        allDrugs = getDefaultdrugs();
+        allDrugs = getDefaultDrugs();
     }
 }
 
@@ -151,7 +151,7 @@ async function loadSalesFromFirebase() {
     }
 }
 
-async function savedrugToFirebase(drug) {
+async function saveDrugToFirebase(drug) {
     try {
         if (drug.id) {
             const drugRef = window.doc('drugs', drug.id);
@@ -180,7 +180,7 @@ async function saveSaleToFirebase(sale) {
     }
 }
 
-async function deletedrugFromFirebase(id) {
+async function deleteDrugFromFirebase(id) {
     try {
         const drugRef = window.doc('drugs', id);
         await window.deleteDoc(drugRef);
@@ -351,13 +351,13 @@ window.addEventListener("pagehide", function(e) {
 });
 
 async function initData() {
-    await loaddrugsFromFirebase();
+    await loadDrugsFromFirebase();
     await loadSalesFromFirebase();
     await loadServicesFromFirebase();
     await loadReceiptsFromFirebase();
 }
 
-function getDefaultdrugs() {
+function getDefaultDrugs() {
     return [
         { id: "1", name: "Paracetamol 500mg", category: "Pain Relief", quantity: 500, price: 20, expiry: "2026-12-31" },
         { id: "2", name: "Amoxicillin 250mg", category: "Antibiotic", quantity: 200, price: 150, expiry: "2026-06-30" },
@@ -384,11 +384,11 @@ function getDefaultServices() {
 }
 
 async function loadAll() {
-    await loaddrugsFromFirebase();
+    await loadDrugsFromFirebase();
     await loadSalesFromFirebase();
     await loadServicesFromFirebase();
     await loadReceiptsFromFirebase();
-    loaddrugs();
+    loadDrugs();
     loadSalesData();
     updateSalesTotals();
     updateInventoryStats();
@@ -461,12 +461,12 @@ function navigateTo(page) {
     }
 }
 
-// ===== drugs =====
-function loaddrugs() {
-    renderdrugOptions(allDrugs);
+// ===== Drugs =====
+function loadDrugs() {
+    renderDrugOptions(allDrugs);
 }
 
-function renderdrugOptions(drugs) {
+function renderDrugOptions(drugs) {
     drugSelect.innerHTML = "";
     if (drugs.length === 0) {
         drugSelect.innerHTML = "<option>No drugs available</option>";
@@ -484,16 +484,16 @@ function renderdrugOptions(drugs) {
 
 drugSearchInput.addEventListener("input", () => {
     const query = drugSearchInput.value.trim().toLowerCase();
-    if (!query) return renderdrugOptions(allDrugs);
+    if (!query) return renderDrugOptions(allDrugs);
     const filtered = allDrugs.filter(d => 
         (d.name?.toLowerCase().includes(query)) ||
         (d.category?.toLowerCase().includes(query))
     );
-    renderdrugOptions(filtered);
+    renderDrugOptions(filtered);
 });
 
-// ===== Sell drug =====
-async function selldrug() {
+// ===== Sell Drug =====
+async function sellDrug() {
     const id = drugSelect.value;
     const qty = Number(qtyInput.value);
     
@@ -504,7 +504,7 @@ async function selldrug() {
 
     const drug = allDrugs.find(d => d.id === id);
     if (!drug) {
-        alert("drug not found!");
+        alert("Drug not found!");
         return;
     }
 
@@ -532,12 +532,12 @@ async function selldrug() {
     await saveSaleToFirebase(sale);
     
     drug.quantity = (drug.quantity ?? 0) - qty;
-    await savedrugToFirebase(drug);
+    await saveDrugToFirebase(drug);
 
     // Generate receipt
     const receipt = {
         itemName: drug.name,
-        type: 'drug Sale',
+        type: 'Drug Sale',
         quantity: qty,
         unitPrice: drug.price,
         totalPrice,
@@ -640,7 +640,7 @@ async function deleteSale(id) {
     const drug = allDrugs.find(d => d.id === sale.drugId);
     if (drug) {
         drug.quantity = (drug.quantity ?? 0) + sale.quantity;
-        await savedrugToFirebase(drug);
+        await saveDrugToFirebase(drug);
     }
     
     await deleteSaleFromFirebase(id);
@@ -712,8 +712,8 @@ function renderInventory() {
             <td>${drug.expiry || "N/A"}</td>
             <td>
                 <div class="action-btns">
-                    <button class="action-btn edit" onclick="openEditdrug('${drug.id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="action-btn delete" onclick="deletedrug('${drug.id}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="action-btn edit" onclick="openEditDrug('${drug.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="action-btn delete" onclick="deleteDrug('${drug.id}')"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         `;
@@ -726,7 +726,7 @@ function renderInventory() {
 }
 
 function updateInventoryStats() {
-    totaldrugsEl.textContent = allDrugs.length;
+    totalDrugsEl.textContent = allDrugs.length;
     const lowStock = allDrugs.filter(d => d.quantity <= MIN_STOCK).length;
     lowStockCountEl.textContent = lowStock;
     const totalValue = allDrugs.reduce((sum, d) => sum + (d.price * d.quantity), 0);
@@ -818,30 +818,30 @@ if (stockSearchBtn) {
 
 // ===== Restock Page =====
 function renderRestockPage() {
-    const restockdrugSelect = document.getElementById("restockdrugSelect");
-    if (!restockdrugSelect) return;
+    const restockDrugSelect = document.getElementById("restockDrugSelect");
+    if (!restockDrugSelect) return;
     
-    restockdrugSelect.innerHTML = '<option value="">Select a drug to restock</option>';
+    restockDrugSelect.innerHTML = '<option value="">Select a drug to restock</option>';
     
-    const sorteddrugs = [...allDrugs].sort((a, b) => 
+    const sortedDrugs = [...allDrugs].sort((a, b) => 
         (a.name || '').localeCompare(b.name || '')
     );
     
-    sorteddrugs.forEach(drug => {
+    sortedDrugs.forEach(drug => {
         const option = document.createElement("option");
         option.value = drug.id;
         option.textContent = `${drug.name} (${drug.category}) - Current: ${drug.quantity ?? 0}`;
-        restockdrugSelect.appendChild(option);
+        restockDrugSelect.appendChild(option);
     });
     
     const lowStockList = document.getElementById("lowStockList");
     const lowStockNotice = document.getElementById("lowStockNotice");
     if (lowStockList && lowStockNotice) {
-        const lowStockdrugs = allDrugs.filter(d => (d.quantity ?? 0) <= MIN_STOCK);
-        if (lowStockdrugs.length > 0) {
+        const lowStockDrugs = allDrugs.filter(d => (d.quantity ?? 0) <= MIN_STOCK);
+        if (lowStockDrugs.length > 0) {
             lowStockNotice.style.display = 'block';
             lowStockList.innerHTML = '';
-            lowStockdrugs.forEach(d => {
+            lowStockDrugs.forEach(d => {
                 const li = document.createElement("li");
                 li.textContent = `${d.name} - Only ${d.quantity ?? 0} left`;
                 lowStockList.appendChild(li);
@@ -857,36 +857,36 @@ const restockSearchInput = document.getElementById("restockSearch");
 if (restockSearchInput) {
     restockSearchInput.addEventListener("input", () => {
         const query = restockSearchInput.value.trim().toLowerCase();
-        const restockdrugSelect = document.getElementById("restockdrugSelect");
-        if (!restockdrugSelect) return;
+        const restockDrugSelect = document.getElementById("restockDrugSelect");
+        if (!restockDrugSelect) return;
         
-        restockdrugSelect.innerHTML = '<option value="">Select a drug to restock</option>';
+        restockDrugSelect.innerHTML = '<option value="">Select a drug to restock</option>';
         
-        const sorteddrugs = [...allDrugs].sort((a, b) => 
+        const sortedDrugs = [...allDrugs].sort((a, b) => 
             (a.name || '').localeCompare(b.name || '')
         );
         
         const filtered = query 
-            ? sorteddrugs.filter(d => 
+            ? sortedDrugs.filter(d => 
                 (d.name?.toLowerCase().includes(query)) ||
                 (d.category?.toLowerCase().includes(query))
               )
-            : sorteddrugs;
+            : sortedDrugs;
         
         filtered.forEach(drug => {
             const option = document.createElement("option");
             option.value = drug.id;
             option.textContent = `${drug.name} (${drug.category}) - Current: ${drug.quantity ?? 0}`;
-            restockdrugSelect.appendChild(option);
+            restockDrugSelect.appendChild(option);
         });
     });
 }
 
 // Handle drug selection change to show current stock
-const restockdrugSelect = document.getElementById("restockdrugSelect");
-if (restockdrugSelect) {
-    restockdrugSelect.addEventListener("change", () => {
-        const drugId = restockdrugSelect.value;
+const restockDrugSelect = document.getElementById("restockDrugSelect");
+if (restockDrugSelect) {
+    restockDrugSelect.addEventListener("change", () => {
+        const drugId = restockDrugSelect.value;
         const restockCurrentStock = document.getElementById("restockCurrentStock");
         if (drugId && restockCurrentStock) {
             const drug = allDrugs.find(d => d.id === drugId);
@@ -905,7 +905,7 @@ if (restockForm) {
     restockForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         
-        const drugId = document.getElementById("restockdrugSelect").value;
+        const drugId = document.getElementById("restockDrugSelect").value;
         const quantityToAdd = Number(document.getElementById("restockQuantity").value);
         const supplier = document.getElementById("restockSupplier").value;
         
@@ -916,12 +916,12 @@ if (restockForm) {
         
         const drug = allDrugs.find(d => d.id === drugId);
         if (!drug) {
-            alert("drug not found!");
+            alert("Drug not found!");
             return;
         }
         
         drug.quantity = (drug.quantity ?? 0) + quantityToAdd;
-        await savedrugToFirebase(drug);
+        await saveDrugToFirebase(drug);
         
         alert(`Successfully restocked ${drug.name} with ${quantityToAdd} units. New stock: ${drug.quantity}`);
         
@@ -933,19 +933,19 @@ if (restockForm) {
 }
 
 // ===== Modal Functions =====
-function showAdddrugModal() {
-    modalTitle.textContent = "Add New drug";
-    editdrugId.value = "";
+function showAddDrugModal() {
+    modalTitle.textContent = "Add New Drug";
+    editDrugId.value = "";
     drugForm.reset();
     drugModal.classList.add("active");
 }
 
-function openEditdrug(id) {
+function openEditDrug(id) {
     const drug = allDrugs.find(d => d.id === id);
     if (!drug) return;
     
-    modalTitle.textContent = "Edit drug";
-    editdrugId.value = drug.id;
+    modalTitle.textContent = "Edit Drug";
+    editDrugId.value = drug.id;
     document.getElementById("drugName").value = drug.name;
     document.getElementById("drugCategory").value = drug.category;
     document.getElementById("drugPrice").value = drug.price;
@@ -958,10 +958,10 @@ function closeModal() {
     drugModal.classList.remove("active");
 }
 
-async function savedrug(e) {
+async function saveDrug(e) {
     e.preventDefault();
     
-    const id = editdrugId.value;
+    const id = editDrugId.value;
     const name = document.getElementById("drugName").value;
     const category = document.getElementById("drugCategory").value;
     const price = Number(document.getElementById("drugPrice").value);
@@ -976,24 +976,24 @@ async function savedrug(e) {
             drug.price = price;
             drug.quantity = quantity;
             drug.expiry = expiry || null;
-            await savedrugToFirebase(drug);
+            await saveDrugToFirebase(drug);
         }
     } else {
-        const newdrug = { name, category, price, quantity, expiry: expiry || null };
-        await savedrugToFirebase(newdrug);
+        const newDrug = { name, category, price, quantity, expiry: expiry || null };
+        await saveDrugToFirebase(newDrug);
     }
 
     closeModal();
-    await loaddrugsFromFirebase();
-    loaddrugs();
+    await loadDrugsFromFirebase();
+    loadDrugs();
     updateInventoryStats();
 }
 
-async function deletedrug(id) {
+async function deleteDrug(id) {
     if (!confirm("Delete this drug from inventory?")) return;
-    await deletedrugFromFirebase(id);
-    await loaddrugsFromFirebase();
-    loaddrugs();
+    await deleteDrugFromFirebase(id);
+    await loadDrugsFromFirebase();
+    loadDrugs();
     updateInventoryStats();
 }
 
@@ -1075,6 +1075,90 @@ async function deleteService(id) {
     await loadServicesFromFirebase();
     renderServices();
 }
+
+// Sell a Service (generates a receipt and adds to sales)
+async function sellService() {
+    const serviceSelect = document.getElementById("serviceSellSelect");
+    if (!serviceSelect) {
+        alert("Service select not found!");
+        return;
+    }
+    const serviceId = serviceSelect.value;
+    
+    if (!serviceId) {
+        alert("Please select a service to sell");
+        return;
+    }
+    
+    const service = allServices.find(s => s.id === serviceId);
+    if (!service) {
+        alert("Service not found!");
+        return;
+    }
+    
+    // Add to sales history
+    const sale = {
+        drugId: service.id,
+        drugName: service.name,
+        category: 'Service',
+        quantity: 1,
+        price: service.price,
+        totalPrice: service.price,
+        timestamp: new Date().toISOString()
+    };
+    
+    await saveSaleToFirebase(sale);
+    
+    // Also generate a receipt
+    const receipt = {
+        itemName: service.name,
+        type: 'Service',
+        quantity: 1,
+        unitPrice: service.price,
+        totalPrice: service.price,
+        timestamp: new Date().toISOString()
+    };
+    
+    await saveReceiptToFirebase(receipt);    alert(`Service "${service.name}" sold for ${formatKsh(service.price)}`);
+    await loadAll();
+}
+
+// Make sellService global
+window.sellService = sellService;
+
+// Load services into the sell dropdown
+function loadServicesForSell() {
+    const serviceSelect = document.getElementById("serviceSellSelect");
+    const servicePriceInput = document.getElementById("serviceSellPrice");
+    
+    if (!serviceSelect) return;
+    
+    serviceSelect.innerHTML = '<option value="">Select a service...</option>';
+    
+    allServices.forEach(service => {
+        const option = document.createElement("option");
+        option.value = service.id;
+        option.textContent = `${service.name} - ${formatKsh(service.price)}`;
+        serviceSelect.appendChild(option);
+    });
+    
+    // Update price when service is selected
+    serviceSelect.addEventListener("change", () => {
+        const selected = allServices.find(s => s.id === serviceSelect.value);
+        if (selected && servicePriceInput) {
+            servicePriceInput.value = selected.price;
+        } else if (servicePriceInput) {
+            servicePriceInput.value = '';
+        }
+    });
+}
+
+// Update renderServices to also call loadServicesForSell
+const originalRenderServices = renderServices;
+renderServices = function() {
+    originalRenderServices();
+    loadServicesForSell();
+};
 
 // ===== Receipts =====
 function renderReceipts() {
@@ -1168,9 +1252,9 @@ function updateNavByRole() {
     
     document.getElementById('userInfoName').textContent = isUserAdmin ? 'Admin User' : 'Chemist User';
     
-    const adddrugBtn = document.getElementById('adddrugNavBtn');
-    if (adddrugBtn) {
-        adddrugBtn.style.display = isUserAdmin ? 'flex' : 'none';
+    const addDrugBtn = document.getElementById('addDrugNavBtn');
+    if (addDrugBtn) {
+        addDrugBtn.style.display = isUserAdmin ? 'flex' : 'none';
     }
     
     const inventoryAddBtn = document.getElementById('inventoryAddBtn');
@@ -1190,13 +1274,13 @@ function updateNavByRole() {
 }
 
 // ===== Make functions global =====
-window.selldrug = selldrug;
+window.sellDrug = sellDrug;
 window.deleteSale = deleteSale;
-window.showAdddrugModal = showAdddrugModal;
-window.openEditdrug = openEditdrug;
+window.showAddDrugModal = showAddDrugModal;
+window.openEditDrug = openEditDrug;
 window.closeModal = closeModal;
-window.savedrug = savedrug;
-window.deletedrug = deletedrug;
+window.saveDrug = saveDrug;
+window.deleteDrug = deleteDrug;
 window.navigateTo = navigateTo;
 window.logout = logout;
 window.getRole = getRole;
@@ -1244,4 +1328,3 @@ function populateAdminPanel() {
     if (adminUsername) adminUsername.value = localStorage.getItem('username') || 'Admin User';
     if (adminRole) adminRole.value = getRole();
 }
-
