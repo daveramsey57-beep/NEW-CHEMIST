@@ -461,6 +461,22 @@
             <tbody id="servicesBody"></tbody>
           </table>
         </div>
+        <div style="margin-top: 20px; padding: 20px; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow);">
+          <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-cart-shopping"></i> Sell a Service</h3>
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label>Select Service</label>
+              <select id="serviceSellSelect" class="form-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Price (KSh)</label>
+              <input type="number" id="serviceSellPrice" class="form-input" readonly />
+            </div>
+          </div>
+          <button class="btn-primary" onclick="sellService()" style="margin-top: 12px;">
+            <i class="fa-solid fa-check"></i> Complete Sale
+          </button>
+        </div>
       </section>
 
       <section id="admin-panel-page" class="page">
