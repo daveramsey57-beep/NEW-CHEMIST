@@ -476,7 +476,7 @@ function renderDrugOptions(drugs) {
         const option = document.createElement("option");
         option.value = drug.id;
         const stockWarning = (drug.quantity ?? 0) <= MIN_STOCK ? " (Low Stock!)" : "";
-        option.textContent = `${drug.name} (${drug.category}) - ${drug.quantity ?? 0} left${stockWarning}`;
+        option.textContent = drug.name + " (" + drug.category + ") - " + (drug.quantity ?? 0) + " left" + stockWarning;
         if ((drug.quantity ?? 0) <= MIN_STOCK) option.style.color = "red";
         drugSelect.appendChild(option);
     });
@@ -545,7 +545,7 @@ async function sellDrug() {
     };
     await saveReceiptToFirebase(receipt);
 
-    alert(`Sold ${qty} x ${drug.name} for ${formatKsh(totalPrice)}`);
+    alert("Sold " + qty + " x " + drug.name + " for " + formatKsh(totalPrice));
     qtyInput.value = "";
     drugSearchInput.value = "";
     
@@ -575,7 +575,7 @@ function renderSales(salesArray) {
         headerRow.className = "date-group-header";
         const headerCell = document.createElement("td");
         headerCell.colSpan = 6;
-        headerCell.innerHTML = `<i class="fa-solid fa-calendar"></i> ${date}`;
+        headerCell.innerHTML = '<i class="fa-solid fa-calendar"></i> ' + date;
         headerRow.appendChild(headerCell);
         salesBody.appendChild(headerRow);
 
@@ -583,18 +583,15 @@ function renderSales(salesArray) {
 
         grouped[date].forEach(sale => {
             const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${sale.drugName || "N/A"}</td>
-                <td>${sale.category || "N/A"}</td>
-                <td>${sale.quantity ?? 0}</td>
-                <td>${formatKsh(sale.totalPrice ?? 0)}</td>
-                <td>${date}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn delete" onclick="deleteSale('${sale.id}')"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </td>
-            `;
+            row.innerHTML = 
+                '<td>' + (sale.drugName || "N/A") + '</td>' +
+                '<td>' + (sale.category || "N/A") + '</td>' +
+                '<td>' + (sale.quantity ?? 0) + '</td>' +
+                '<td>' + formatKsh(sale.totalPrice ?? 0) + '</td>' +
+                '<td>' + date + '</td>' +
+                '<td><div class="action-btns">' +
+                    '<button class="action-btn delete" onclick="deleteSale(\'' + sale.id + '\')"><i class="fa-solid fa-trash"></i></button>' +
+                '</div></td>';
             salesBody.appendChild(row);
         });
     });
@@ -611,13 +608,12 @@ function renderRecentSales() {
     recent.forEach(sale => {
         const date = new Date(sale.timestamp).toLocaleDateString();
         const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${sale.drugName}</td>
-            <td>${sale.category}</td>
-            <td>${sale.quantity}</td>
-            <td>${formatKsh(sale.totalPrice)}</td>
-            <td>${date}</td>
-        `;
+        row.innerHTML = 
+            '<td>' + sale.drugName + '</td>' +
+            '<td>' + sale.category + '</td>' +
+            '<td>' + sale.quantity + '</td>' +
+            '<td>' + formatKsh(sale.totalPrice) + '</td>' +
+            '<td>' + date + '</td>';
         recentSalesBody.appendChild(row);
     });
 
@@ -667,6 +663,55 @@ clearSalesFilterBtn.addEventListener("click", () => {
     loadSalesData();
 });
 
+// Summary tabs
+const summaryTabs = document.querySelectorAll('.summary-tabs .filter-btn');
+const summaryContent = document.getElementById('summaryContent');
+
+summaryTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        summaryTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderSummary(tab.dataset.period);
+    });
+});
+
+function renderSummary(period) {
+    const now = new Date();
+    let startDate, endDate;
+    
+    if (period === 'weekly') {
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        endDate = now;
+    } else if (period === 'monthly') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    } else if (period === 'yearly') {
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+    }
+    
+    const filtered = allSales.filter(s => {
+        const saleDate = new Date(s.timestamp);
+        return saleDate >= startDate && saleDate <= endDate;
+    });
+    
+    const totalAmount = filtered.reduce((sum, s) => sum + (s.totalPrice ?? 0), 0);
+    const totalQuantity = filtered.reduce((sum, s) => sum + (s.quantity ?? 0), 0);
+    const transactionCount = filtered.length;
+    
+    summaryContent.innerHTML = '<div class="summary-grid">' +
+        '<div class="summary-card"><h3>Total Sales</h3><p>' + formatKsh(totalAmount) + '</p></div>' +
+        '<div class="summary-card"><h3>Items Sold</h3><p>' + totalQuantity + '</p></div>' +
+        '<div class="summary-card"><h3>Transactions</h3><p>' + transactionCount + '</p></div>' +
+    '</div>';
+}
+
+// Initialize summary on page load
+if (summaryContent) {
+    renderSummary('weekly');
+}
+
 // ===== Stats =====
 function updateSalesTotals() {
     const now = new Date();
@@ -704,19 +749,16 @@ function renderInventory() {
         if (qty === 0) stockClass = "out-of-stock";
         else if (qty <= MIN_STOCK) stockClass = "low-stock";
         
-        row.innerHTML = `
-            <td><strong>${drug.name}</strong></td>
-            <td>${drug.category}</td>
-            <td>${formatKsh(drug.price)}</td>
-            <td><span class="stock-status ${stockClass}">${qty}</span></td>
-            <td>${drug.expiry || "N/A"}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="openEditDrug('${drug.id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="action-btn delete" onclick="deleteDrug('${drug.id}')"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            </td>
-        `;
+        row.innerHTML = 
+            '<td><strong>' + drug.name + '</strong></td>' +
+            '<td>' + drug.category + '</td>' +
+            '<td>' + formatKsh(drug.price) + '</td>' +
+            '<td><span class="stock-status ' + stockClass + '">' + qty + '</span></td>' +
+            '<td>' + (drug.expiry || "N/A") + '</td>' +
+            '<td><div class="action-btns">' +
+                '<button class="action-btn edit" onclick="openEditDrug(\'' + drug.id + '\')"><i class="fa-solid fa-pen"></i></button>' +
+                '<button class="action-btn delete" onclick="deleteDrug(\'' + drug.id + '\')"><i class="fa-solid fa-trash"></i></button>' +
+            '</div></td>';
         inventoryBody.appendChild(row);
     });
 
@@ -753,13 +795,12 @@ function renderStock() {
         if (qty === 0) stockClass = "out-of-stock";
         else if (qty <= MIN_STOCK) stockClass = "low-stock";
         
-        row.innerHTML = `
-            <td><strong>${drug.name}</strong></td>
-            <td>${drug.category}</td>
-            <td>${qty}</td>
-            <td>${formatKsh(drug.price)}</td>
-            <td><span class="stock-status ${stockClass}">${qty === 0 ? 'Out of Stock' : qty <= MIN_STOCK ? 'Low Stock' : 'In Stock'}</span></td>
-        `;
+        row.innerHTML = 
+            '<td><strong>' + drug.name + '</strong></td>' +
+            '<td>' + drug.category + '</td>' +
+            '<td>' + qty + '</td>' +
+            '<td>' + formatKsh(drug.price) + '</td>' +
+            '<td><span class="stock-status ' + stockClass + '">' + (qty === 0 ? 'Out of Stock' : qty <= MIN_STOCK ? 'Low Stock' : 'In Stock') + '</span></td>';
         stockBody.appendChild(row);
     });
 }
@@ -793,13 +834,12 @@ function performStockSearch() {
         if (qty === 0) stockClass = "out-of-stock";
         else if (qty <= MIN_STOCK) stockClass = "low-stock";
         
-        row.innerHTML = `
-            <td><strong>${drug.name}</strong></td>
-            <td>${drug.category}</td>
-            <td>${qty}</td>
-            <td>${formatKsh(drug.price)}</td>
-            <td><span class="stock-status ${stockClass}">${qty === 0 ? 'Out of Stock' : qty <= MIN_STOCK ? 'Low Stock' : 'In Stock'}</span></td>
-        `;
+        row.innerHTML = 
+            '<td><strong>' + drug.name + '</strong></td>' +
+            '<td>' + drug.category + '</td>' +
+            '<td>' + qty + '</td>' +
+            '<td>' + formatKsh(drug.price) + '</td>' +
+            '<td><span class="stock-status ' + stockClass + '">' + (qty === 0 ? 'Out of Stock' : qty <= MIN_STOCK ? 'Low Stock' : 'In Stock') + '</span></td>';
         stockBody.appendChild(row);
     });
     
@@ -830,7 +870,7 @@ function renderRestockPage() {
     sortedDrugs.forEach(drug => {
         const option = document.createElement("option");
         option.value = drug.id;
-        option.textContent = `${drug.name} (${drug.category}) - Current: ${drug.quantity ?? 0}`;
+        option.textContent = drug.name + " (" + drug.category + ") - Current: " + (drug.quantity ?? 0);
         restockDrugSelect.appendChild(option);
     });
     
@@ -843,7 +883,7 @@ function renderRestockPage() {
             lowStockList.innerHTML = '';
             lowStockDrugs.forEach(d => {
                 const li = document.createElement("li");
-                li.textContent = `${d.name} - Only ${d.quantity ?? 0} left`;
+                li.textContent = d.name + " - Only " + (d.quantity ?? 0) + " left";
                 lowStockList.appendChild(li);
             });
         } else {
@@ -876,7 +916,7 @@ if (restockSearchInput) {
         filtered.forEach(drug => {
             const option = document.createElement("option");
             option.value = drug.id;
-            option.textContent = `${drug.name} (${drug.category}) - Current: ${drug.quantity ?? 0}`;
+            option.textContent = drug.name + " (" + drug.category + ") - Current: " + (drug.quantity ?? 0);
             restockDrugSelect.appendChild(option);
         });
     });
@@ -923,7 +963,7 @@ if (restockForm) {
         drug.quantity = (drug.quantity ?? 0) + quantityToAdd;
         await saveDrugToFirebase(drug);
         
-        alert(`Successfully restocked ${drug.name} with ${quantityToAdd} units. New stock: ${drug.quantity}`);
+        alert("Successfully restocked " + drug.name + " with " + quantityToAdd + " units. New stock: " + drug.quantity);
         
         restockForm.reset();
         document.getElementById("restockCurrentStock").value = '';
@@ -1005,22 +1045,22 @@ function renderServices() {
     servicesBody.innerHTML = "";
     allServices.forEach(service => {
         const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><strong>${service.name}</strong></td>
-            <td>${formatKsh(service.price)}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="openEditService('${service.id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="action-btn delete" onclick="deleteService('${service.id}')"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            </td>
-        `;
+        row.innerHTML = 
+            '<td><strong>' + service.name + '</strong></td>' +
+            '<td>' + formatKsh(service.price) + '</td>' +
+            '<td><div class="action-btns">' +
+                '<button class="action-btn edit" onclick="openEditService(\'' + service.id + '\')"><i class="fa-solid fa-pen"></i></button>' +
+                '<button class="action-btn delete" onclick="deleteService(\'' + service.id + '\')"><i class="fa-solid fa-trash"></i></button>' +
+            '</div></td>';
         servicesBody.appendChild(row);
     });
 
     if (allServices.length === 0) {
         servicesBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:40px;">No services added yet</td></tr>';
     }
+    
+    // Also load services for the sell dropdown
+    loadServicesForSell();
 }
 
 function showAddServiceModal() {
@@ -1119,12 +1159,10 @@ async function sellService() {
         timestamp: new Date().toISOString()
     };
     
-    await saveReceiptToFirebase(receipt);    alert(`Service "${service.name}" sold for ${formatKsh(service.price)}`);
+    await saveReceiptToFirebase(receipt);
+    alert("Service \"" + service.name + "\" sold for " + formatKsh(service.price));
     await loadAll();
 }
-
-// Make sellService global
-window.sellService = sellService;
 
 // Load services into the sell dropdown
 function loadServicesForSell() {
@@ -1138,7 +1176,7 @@ function loadServicesForSell() {
     allServices.forEach(service => {
         const option = document.createElement("option");
         option.value = service.id;
-        option.textContent = `${service.name} - ${formatKsh(service.price)}`;
+        option.textContent = service.name + " - " + formatKsh(service.price);
         serviceSelect.appendChild(option);
     });
     
@@ -1153,13 +1191,6 @@ function loadServicesForSell() {
     });
 }
 
-// Update renderServices to also call loadServicesForSell
-const originalRenderServices = renderServices;
-renderServices = function() {
-    originalRenderServices();
-    loadServicesForSell();
-};
-
 // ===== Receipts =====
 function renderReceipts() {
     const receiptsBody = document.getElementById("receiptsBody");
@@ -1171,17 +1202,14 @@ function renderReceipts() {
     sortedReceipts.forEach(receipt => {
         const row = document.createElement("tr");
         const date = new Date(receipt.timestamp).toLocaleDateString();
-        row.innerHTML = `
-            <td><strong>${receipt.id}</strong></td>
-            <td>${receipt.itemName}</td>
-            <td>${formatKsh(receipt.totalPrice)}</td>
-            <td>${date}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="viewReceipt('${receipt.id}')"><i class="fa-solid fa-eye"></i></button>
-                </div>
-            </td>
-        `;
+        row.innerHTML = 
+            '<td><strong>' + receipt.id + '</strong></td>' +
+            '<td>' + receipt.itemName + '</td>' +
+            '<td>' + formatKsh(receipt.totalPrice) + '</td>' +
+            '<td>' + date + '</td>' +
+            '<td><div class="action-btns">' +
+                '<button class="action-btn edit" onclick="viewReceipt(\'' + receipt.id + '\')"><i class="fa-solid fa-eye"></i></button>' +
+            '</div></td>';
         receiptsBody.appendChild(row);
     });
 
@@ -1197,24 +1225,23 @@ function viewReceipt(id) {
     const receiptContent = document.getElementById("receiptContent");
     const date = new Date(receipt.timestamp).toLocaleString();
 
-    receiptContent.innerHTML = `
-        <div style="text-align: center; margin-bottom: 16px;">
-            <h3 style="margin: 0;">New Chemist</h3>
-            <p style="color: #666; font-size: 0.85rem;">Your Health, Our Priority</p>
-        </div>
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
-        <p><strong>Receipt ID:</strong> ${receipt.id}</p>
-        <p><strong>Date:</strong> ${date}</p>
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
-        <p><strong>Item:</strong> ${receipt.itemName}</p>
-        <p><strong>Type:</strong> ${receipt.type || 'Sale'}</p>
-        <p><strong>Quantity:</strong> ${receipt.quantity || 1}</p>
-        <p><strong>Unit Price:</strong> ${formatKsh(receipt.unitPrice || receipt.totalPrice)}</p>
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
-        <p style="font-size: 1.1rem;"><strong>Total: ${formatKsh(receipt.totalPrice)}</strong></p>
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">
-        <p style="text-align: center; color: #666; font-size: 0.8rem;">Thank you for your business!</p>
-    `;
+    receiptContent.innerHTML = 
+        '<div style="text-align: center; margin-bottom: 16px;">' +
+            '<h3 style="margin: 0;">New Chemist</h3>' +
+            '<p style="color: #666; font-size: 0.85rem;">Your Health, Our Priority</p>' +
+        '</div>' +
+        '<hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">' +
+        '<p><strong>Receipt ID:</strong> ' + receipt.id + '</p>' +
+        '<p><strong>Date:</strong> ' + date + '</p>' +
+        '<hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">' +
+        '<p><strong>Item:</strong> ' + receipt.itemName + '</p>' +
+        '<p><strong>Type:</strong> ' + (receipt.type || 'Sale') + '</p>' +
+        '<p><strong>Quantity:</strong> ' + (receipt.quantity || 1) + '</p>' +
+        '<p><strong>Unit Price:</strong> ' + formatKsh(receipt.unitPrice || receipt.totalPrice) + '</p>' +
+        '<hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">' +
+        '<p style="font-size: 1.1rem;"><strong>Total: ' + formatKsh(receipt.totalPrice) + '</strong></p>' +
+        '<hr style="border: none; border-top: 1px dashed #ccc; margin: 12px 0;">' +
+        '<p style="text-align: center; color: #666; font-size: 0.8rem;">Thank you for your business!</p>';
 
     receiptModal.classList.add("active");
 }
@@ -1293,6 +1320,7 @@ window.openEditService = openEditService;
 window.closeServiceModal = closeServiceModal;
 window.saveService = saveService;
 window.deleteService = deleteService;
+window.sellService = sellService;
 window.viewReceipt = viewReceipt;
 window.closeReceiptModal = closeReceiptModal;
 window.printReceipt = printReceipt;
