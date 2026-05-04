@@ -3,6 +3,7 @@ let allDrugs = [];
 let allSales = [];
 let allServices = [];
 let allReceipts = [];
+let allExpenses = [];
 const MIN_STOCK = 5;
 let currentRole = 'user';
 const SESSION_TIMEOUT = 30 * 60 * 1000;
@@ -127,6 +128,29 @@ async function loadReceiptsFromFirebase() {
     }
 }
 
+async function loadExpensesFromFirebase() {
+    try {
+        if (!window.db) throw new Error('Firebase not ready');
+        const expensesRef = window.collection('expenses');
+        const snapshot = await window.getDocs(expensesRef);
+        allExpenses = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allExpenses.push({
+                id: doc.id,
+                description: data.description,
+                category: data.category,
+                amount: data.amount,
+                date: data.date,
+                timestamp: data.timestamp
+            });
+        });
+    } catch (e) {
+        console.log('No expenses found');
+        allExpenses = [];
+    }
+}
+
 async function loadSalesFromFirebase() {
     try {
         const salesRef = window.collection('sales');
@@ -219,6 +243,30 @@ async function deleteServiceFromFirebase(id) {
         await window.deleteDoc(serviceRef);
     } catch (e) {
         console.error('Firebase error deleting service: ' + e.message);
+    }
+}
+
+async function saveExpenseToFirebase(expense) {
+    try {
+        if (expense.id) {
+            const expenseRef = window.doc('expenses', expense.id);
+            await window.updateDoc(expenseRef, expense);
+        } else {
+            const expensesRef = window.collection('expenses');
+            const docRef = await window.addDoc(expensesRef, expense);
+            expense.id = docRef.id;
+        }
+    } catch (e) {
+        console.error('Firebase error saving expense: ' + e.message);
+    }
+}
+
+async function deleteExpenseFromFirebase(id) {
+    try {
+        const expenseRef = window.doc('expenses', id);
+        await window.deleteDoc(expenseRef);
+    } catch (e) {
+        console.error('Firebase error deleting expense: ' + e.message);
     }
 }
 
@@ -388,6 +436,7 @@ async function loadAll() {
     await loadSalesFromFirebase();
     await loadServicesFromFirebase();
     await loadReceiptsFromFirebase();
+    await loadExpensesFromFirebase();
     loadDrugs();
     loadSalesData();
     updateSalesTotals();
@@ -396,6 +445,8 @@ async function loadAll() {
     renderStock();
     renderServices();
     renderReceipts();
+    renderExpenses();
+    updateExpensesStats();
 }
 
 function setCurrentDate() {
@@ -1263,6 +1314,190 @@ function printReceipt() {
     printWindow.print();
 }
 
+// ===== Expenses =====
+function renderExpenses(filteredExpenses = null) {
+    const expensesBody = document.getElementById("expensesBody");
+    if (!expensesBody) return;
+
+    expensesBody.innerHTML = "";
+    const expensesToShow = filteredExpenses || allExpenses;
+    const sortedExpenses = [...expensesToShow].sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+
+    sortedExpenses.forEach(expense => {
+        const row = document.createElement("tr");
+        const date = expense.date ? new Date(expense.date).toLocaleDateString() : new Date(expense.timestamp).toLocaleDateString();
+        row.innerHTML =
+            '<td>' + date + '</td>' +
+            '<td>' + expense.description + '</td>' +
+            '<td><span class="status-badge status-soon">' + expense.category + '</span></td>' +
+            '<td>' + formatKsh(expense.amount) + '</td>' +
+            '<td><div class="action-btns">' +
+                '<button class="action-btn edit" onclick="editExpense(\'' + expense.id + '\')"><i class="fa-solid fa-pen"></i></button>' +
+                '<button class="action-btn delete" onclick="deleteExpense(\'' + expense.id + '\')"><i class="fa-solid fa-trash"></i></button>' +
+            '</div></td>';
+        expensesBody.appendChild(row);
+    });
+
+    if (sortedExpenses.length === 0) {
+        expensesBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:40px;">No expenses recorded yet</td></tr>';
+    }
+}
+
+function updateExpensesStats(filteredExpenses = null) {
+    const expensesToCount = filteredExpenses || allExpenses;
+    const total = expensesToCount.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+
+    const totalExpensesEl = document.getElementById("totalExpenses");
+    const filteredExpensesEl = document.getElementById("filteredExpenses");
+    const expensesCountEl = document.getElementById("expensesCount");
+
+    if (totalExpensesEl) {
+        const allTotal = allExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+        totalExpensesEl.textContent = formatKsh(allTotal);
+    }
+    if (filteredExpensesEl) {
+        filteredExpensesEl.textContent = formatKsh(total);
+    }
+    if (expensesCountEl) {
+        expensesCountEl.textContent = expensesToCount.length;
+    }
+}
+
+function showAddExpenseModal() {
+    const expenseModal = document.getElementById("expenseModal");
+    const expenseForm = document.getElementById("expenseForm");
+    const expenseModalTitle = document.getElementById("expenseModalTitle");
+    const editExpenseId = document.getElementById("editExpenseId");
+
+    if (expenseForm) expenseForm.reset();
+    if (editExpenseId) editExpenseId.value = '';
+    if (expenseModalTitle) expenseModalTitle.textContent = 'Add New Expense';
+
+    const expenseDate = document.getElementById("expenseDate");
+    if (expenseDate) expenseDate.value = new Date().toISOString().split('T')[0];
+
+    if (expenseModal) expenseModal.classList.add("active");
+}
+
+function editExpense(id) {
+    const expense = allExpenses.find(e => e.id === id);
+    if (!expense) return;
+
+    const expenseModal = document.getElementById("expenseModal");
+    const expenseModalTitle = document.getElementById("expenseModalTitle");
+    const editExpenseId = document.getElementById("editExpenseId");
+    const expenseDescription = document.getElementById("expenseDescription");
+    const expenseCategory = document.getElementById("expenseCategory");
+    const expenseAmount = document.getElementById("expenseAmount");
+    const expenseDate = document.getElementById("expenseDate");
+
+    if (expenseModalTitle) expenseModalTitle.textContent = 'Edit Expense';
+    if (editExpenseId) editExpenseId.value = id;
+    if (expenseDescription) expenseDescription.value = expense.description;
+    if (expenseCategory) expenseCategory.value = expense.category;
+    if (expenseAmount) expenseAmount.value = expense.amount;
+    if (expenseDate) expenseDate.value = expense.date || new Date().toISOString().split('T')[0];
+
+    if (expenseModal) expenseModal.classList.add("active");
+}
+
+async function saveExpense(e) {
+    e.preventDefault();
+
+    const editExpenseId = document.getElementById("editExpenseId");
+    const expenseDescription = document.getElementById("expenseDescription");
+    const expenseCategory = document.getElementById("expenseCategory");
+    const expenseAmount = document.getElementById("expenseAmount");
+    const expenseDate = document.getElementById("expenseDate");
+
+    const expense = {
+        description: expenseDescription?.value || '',
+        category: expenseCategory?.value || 'Other',
+        amount: parseFloat(expenseAmount?.value) || 0,
+        date: expenseDate?.value || new Date().toISOString().split('T')[0],
+        timestamp: new Date().toISOString()
+    };
+
+    if (editExpenseId?.value) {
+        expense.id = editExpenseId.value;
+    }
+
+    await saveExpenseToFirebase(expense);
+
+    await loadExpensesFromFirebase();
+    renderExpenses();
+    updateExpensesStats();
+
+    closeExpenseModal();
+}
+
+async function deleteExpense(id) {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+
+    await deleteExpenseFromFirebase(id);
+    await loadExpensesFromFirebase();
+    renderExpenses();
+    updateExpensesStats();
+}
+
+function closeExpenseModal() {
+    const expenseModal = document.getElementById("expenseModal");
+    if (expenseModal) expenseModal.classList.remove("active");
+}
+
+// Filter expenses by date
+function filterExpenses() {
+    const startDateInput = document.getElementById("expensesStartDate");
+    const endDateInput = document.getElementById("expensesEndDate");
+
+    const startDate = startDateInput?.value ? new Date(startDateInput.value) : null;
+    const endDate = endDateInput?.value ? new Date(endDateInput.value) : null;
+
+    if (!startDate && !endDate) {
+        renderExpenses();
+        updateExpensesStats();
+        return;
+    }
+
+    const filtered = allExpenses.filter(expense => {
+        const expenseDate = new Date(expense.date || expense.timestamp);
+        if (startDate && expenseDate < startDate) return false;
+        if (endDate) {
+            const endOfDay = new Date(endDate);
+            endOfDay.setHours(23, 59, 59, 999);
+            if (expenseDate > endOfDay) return false;
+        }
+        return true;
+    });
+
+    renderExpenses(filtered);
+    updateExpensesStats(filtered);
+}
+
+function clearExpensesFilter() {
+    const startDateInput = document.getElementById("expensesStartDate");
+    const endDateInput = document.getElementById("expensesEndDate");
+
+    if (startDateInput) startDateInput.value = '';
+    if (endDateInput) endDateInput.value = '';
+
+    renderExpenses();
+    updateExpensesStats();
+}
+
+// Add event listeners for expense filters
+document.addEventListener('DOMContentLoaded', () => {
+    const filterExpensesBtn = document.getElementById('filterExpensesBtn');
+    const clearExpensesFilterBtn = document.getElementById('clearExpensesFilterBtn');
+
+    if (filterExpensesBtn) {
+        filterExpensesBtn.addEventListener('click', filterExpenses);
+    }
+    if (clearExpensesFilterBtn) {
+        clearExpensesFilterBtn.addEventListener('click', clearExpensesFilter);
+    }
+});
+
 // ===== Utilities =====
 function formatKsh(amount) {
     return "KSh " + (amount ?? 0).toLocaleString("en-KE", { minimumFractionDigits: 2 });
@@ -1356,3 +1591,228 @@ function populateAdminPanel() {
     if (adminUsername) adminUsername.value = localStorage.getItem('username') || 'Admin User';
     if (adminRole) adminRole.value = getRole();
 }
+
+// ===== Futuristic Effects =====
+
+// Animated counter for stat values
+function animateCounter(element, target, prefix = '', duration = 1000) {
+    const start = 0;
+    const increment = target / (duration / 16);
+    let current = start;
+    const isFloat = target % 1 !== 0;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        if (isFloat) {
+            element.textContent = prefix + current.toFixed(2);
+        } else {
+            element.textContent = prefix + Math.floor(current).toLocaleString();
+        }
+    }, 16);
+}
+
+// Override update stats to use animated counters
+const originalUpdateStats = window.updateStats || function() {};
+window.updateStats = function() {
+    originalUpdateStats.apply(this, arguments);
+
+    setTimeout(() => {
+        const totalSales = parseFloat(document.getElementById('totalSales')?.textContent?.replace(/[^0-9.]/g, '') || 0);
+        const dailyTotal = parseFloat(document.getElementById('dailyTotal')?.textContent?.replace(/[^0-9.]/g, '') || 0);
+        const monthlyTotal = parseFloat(document.getElementById('monthlyTotal')?.textContent?.replace(/[^0-9.]/g, '') || 0);
+        const yearlyTotal = parseFloat(document.getElementById('yearlyTotal')?.textContent?.replace(/[^0-9.]/g, '') || 0);
+
+        if (document.getElementById('totalSales')) {
+            animateCounter(document.getElementById('totalSales'), totalSales, 'KSh ');
+        }
+        if (document.getElementById('dailyTotal')) {
+            animateCounter(document.getElementById('dailyTotal'), dailyTotal, 'KSh ');
+        }
+        if (document.getElementById('monthlyTotal')) {
+            animateCounter(document.getElementById('monthlyTotal'), monthlyTotal, 'KSh ');
+        }
+        if (document.getElementById('yearlyTotal')) {
+            animateCounter(document.getElementById('yearlyTotal'), yearlyTotal, 'KSh ');
+        }
+    }, 100);
+};
+
+// Particle background effect
+function createParticleCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'particleCanvas';
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0.3;';
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const particleCount = 50;
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.radius = Math.random() * 2 + 1;
+            this.opacity = Math.random() * 0.5 + 0.2;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(2, 132, 199, ${this.opacity})`;
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(particle => {
+            particle.update();
+            particle.draw();
+        });
+
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(2, 132, 199, ${0.1 * (1 - distance / 100)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+// Glitch effect on logo
+function addGlitchEffect() {
+    const logo = document.querySelector('.logo i');
+    if (!logo) return;
+
+    setInterval(() => {
+        if (Math.random() > 0.7) {
+            logo.style.transform = `translate(${(Math.random() - 0.5) * 4}px, ${(Math.random() - 0.5) * 4}px)`;
+            logo.style.color = Math.random() > 0.5 ? '#0284c7' : '#10b981';
+            setTimeout(() => {
+                logo.style.transform = '';
+                logo.style.color = '';
+            }, 100);
+        }
+    }, 3000);
+}
+
+// Hover sound effect (subtle)
+function addHoverSounds() {
+    const buttons = document.querySelectorAll('.btn-primary, .nav-item, .stat-card');
+    buttons.forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        });
+    });
+}
+
+// Initialize futuristic effects
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        createParticleCanvas();
+        addGlitchEffect();
+    }, 500);
+});
+
+// Add cyber-scan line effect
+function addScanLine() {
+    const scanLine = document.createElement('div');
+    scanLine.style.cssText = 'position:fixed;top:-100%;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,rgba(2,132,199,0.5),transparent);z-index:9999;pointer-events:none;';
+    document.body.appendChild(scanLine);
+
+    setInterval(() => {
+        scanLine.style.transition = 'top 2s linear';
+        scanLine.style.top = '100%';
+        setTimeout(() => {
+            scanLine.style.transition = 'none';
+            scanLine.style.top = '-100%';
+        }, 2000);
+    }, 5000);
+}
+
+addScanLine();
+
+// Data stream effect for table rows
+function addDataStreamEffect() {
+    const tables = document.querySelectorAll('.data-table tbody');
+    tables.forEach(tbody => {
+        tbody.addEventListener('click', (e) => {
+            if (e.target.closest('tr')) {
+                const row = e.target.closest('tr');
+                row.style.background = 'linear-gradient(90deg, rgba(2,132,199,0.2), rgba(16,185,129,0.2))';
+                setTimeout(() => {
+                    row.style.background = '';
+                }, 500);
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', addDataStreamEffect);
+
+// ===== Dark Mode Toggle =====
+function toggleDarkMode(enabled) {
+    if (enabled) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'true');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'false');
+    }
+}
+
+// Load dark mode preference on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+    if (darkModeToggle) {
+        darkModeToggle.checked = isDarkMode;
+    }
+
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+    }
+});
