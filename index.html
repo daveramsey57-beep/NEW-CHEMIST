@@ -65,9 +65,9 @@
           <i class="fa-solid fa-calendar-xmark"></i>
           <span>Expiry Dates</span>
         </a>
-        <a href="#" class="nav-item" data-page="add-drug" id="addDrugNavBtn">
-          <i class="fa-solid fa-plus-circle"></i>
-          <span>Add Drugs</span>
+        <a href="#" class="nav-item" data-page="expenses" id="expensesNavBtn">
+          <i class="fa-solid fa-money-bill-wave"></i>
+          <span>Expenses</span>
         </a>
         <a href="#" class="nav-item" data-page="services" id="servicesNavBtn">
           <i class="fa-solid fa-handshake"></i>
@@ -95,6 +95,10 @@
         <a href="#" class="nav-item" data-page="sales">
           <i class="fa-solid fa-receipt"></i>
           <span>Sales History</span>
+        </a>
+        <a href="#" class="nav-item" data-page="expenses" id="expensesNavBtnUser">
+          <i class="fa-solid fa-money-bill-wave"></i>
+          <span>Expenses</span>
         </a>
         <a href="#" class="nav-item" data-page="receipts">
           <i class="fa-solid fa-receipt"></i>
@@ -240,6 +244,12 @@
             </button>
           </div>
         </div>
+        <div class="summary-tabs">
+          <button class="filter-btn active" data-period="weekly">Weekly</button>
+          <button class="filter-btn" data-period="monthly">Monthly</button>
+          <button class="filter-btn" data-period="yearly">Yearly</button>
+        </div>
+        <div id="summaryContent" class="summary-content"></div>
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -476,6 +486,64 @@
           <button class="btn-primary" onclick="sellService()" style="margin-top: 12px;">
             <i class="fa-solid fa-check"></i> Complete Sale
           </button>
+        </div>
+      </section>
+
+      <section id="expenses-page" class="page">
+        <header class="page-header">
+          <h1><i class="fa-solid fa-money-bill-wave"></i> Expenses</h1>
+          <button class="btn-primary" onclick="showAddExpenseModal()" id="expensesAddBtn" style="display: none;">
+            <i class="fa-solid fa-plus"></i> Add Expense
+          </button>
+        </header>
+        
+        <div class="filters-section">
+          <div class="date-filters">
+            <div class="filter-group">
+              <label>From</label>
+              <input type="date" id="expensesStartDate" class="form-input" />
+            </div>
+            <div class="filter-group">
+              <label>To</label>
+              <input type="date" id="expensesEndDate" class="form-input" />
+            </div>
+            <button class="btn-secondary" id="filterExpensesBtn">
+              <i class="fa-solid fa-filter"></i> Filter
+            </button>
+            <button class="btn-outline" id="clearExpensesFilterBtn">
+              <i class="fa-solid fa-xmark"></i> Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="inventory-stats">
+          <div class="inv-stat">
+            <span class="inv-value" id="totalExpenses">KSh 0</span>
+            <span class="inv-label">Total Expenses</span>
+          </div>
+          <div class="inv-stat">
+            <span class="inv-value" id="filteredExpenses">KSh 0</span>
+            <span class="inv-label">Filtered Total</span>
+          </div>
+          <div class="inv-stat">
+            <span class="inv-value" id="expensesCount">0</span>
+            <span class="inv-label">Number of Expenses</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount (KSh)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expensesBody"></tbody>
+          </table>
         </div>
       </section>
 
