@@ -497,24 +497,24 @@
           </button>
         </header>
         
-        <div class="filters-section">
-          <div class="date-filters">
-            <div class="filter-group">
-              <label>From</label>
-              <input type="date" id="expensesStartDate" class="form-input" />
+          <div class="filters-section">
+            <div class="date-filters">
+              <div class="filter-group">
+                <label>From</label>
+                <input type="date" id="expensesStartDate" class="form-input" />
+              </div>
+              <div class="filter-group">
+                <label>To</label>
+                <input type="date" id="expensesEndDate" class="form-input" />
+              </div>
+              <button class="btn-secondary" id="filterExpensesBtn" onclick="filterExpenses()">
+                <i class="fa-solid fa-filter"></i> Filter
+              </button>
+              <button class="btn-outline" id="clearExpensesFilterBtn" onclick="clearExpensesFilter()">
+                <i class="fa-solid fa-xmark"></i> Clear
+              </button>
             </div>
-            <div class="filter-group">
-              <label>To</label>
-              <input type="date" id="expensesEndDate" class="form-input" />
-            </div>
-            <button class="btn-secondary" id="filterExpensesBtn">
-              <i class="fa-solid fa-filter"></i> Filter
-            </button>
-            <button class="btn-outline" id="clearExpensesFilterBtn">
-              <i class="fa-solid fa-xmark"></i> Clear
-            </button>
           </div>
-        </div>
 
         <div class="inventory-stats">
           <div class="inv-stat">
