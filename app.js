@@ -60,6 +60,12 @@ const serviceModalTitle = document.getElementById("serviceModalTitle");
 // Receipt modal
 const receiptModal = document.getElementById("receiptModal");
 
+// ===== Utility Functions =====
+function formatKsh(amount) {
+    if (typeof amount !== 'number' || isNaN(amount)) return 'KSh 0';
+    return 'KSh ' + amount.toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
 // ===== Firebase Functions =====
 async function loadDrugsFromFirebase() {
     try {
@@ -337,6 +343,29 @@ async function showMainApp() {
     loadAdminPages();
 }
 
+function updateNavByRole() {
+    const role = getRole();
+    const adminNav = document.getElementById('adminNavItems');
+    const userNav = document.getElementById('userNavItems');
+    const adminAddBtn = document.getElementById('inventoryAddBtn');
+    const addServiceBtn = document.getElementById('addServiceBtn');
+    const expensesAddBtn = document.getElementById('expensesAddBtn');
+    
+    if (role === 'admin') {
+        if (adminNav) adminNav.style.display = 'flex';
+        if (userNav) userNav.style.display = 'none';
+        if (adminAddBtn) adminAddBtn.style.display = 'inline-flex';
+        if (addServiceBtn) addServiceBtn.style.display = 'inline-flex';
+        if (expensesAddBtn) expensesAddBtn.style.display = 'inline-flex';
+    } else {
+        if (adminNav) adminNav.style.display = 'none';
+        if (userNav) userNav.style.display = 'flex';
+        if (adminAddBtn) adminAddBtn.style.display = 'none';
+        if (addServiceBtn) addServiceBtn.style.display = 'none';
+        if (expensesAddBtn) expensesAddBtn.style.display = 'none';
+    }
+}
+
 function setupRoleBasedUI() {
     setTimeout(() => {
         const role = getRole();
@@ -344,7 +373,7 @@ function setupRoleBasedUI() {
         updateNavByRole();
         
         if (role !== 'admin') {
-            navigateTo('sell');
+            navigateTo('dashboard');
         }
     }, 100);
 }
@@ -995,30 +1024,47 @@ const restockForm = document.getElementById("restockForm");
 if (restockForm) {
     restockForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
+
         const drugId = document.getElementById("restockDrugSelect").value;
         const quantityToAdd = Number(document.getElementById("restockQuantity").value);
         const supplier = document.getElementById("restockSupplier").value;
-        
+
         if (!drugId || quantityToAdd <= 0) {
             alert("Please select a drug and enter a valid quantity");
             return;
         }
-        
+
         const drug = allDrugs.find(d => d.id === drugId);
         if (!drug) {
             alert("Drug not found!");
             return;
         }
-        
+
         drug.quantity = (drug.quantity ?? 0) + quantityToAdd;
         await saveDrugToFirebase(drug);
-        
+
+        // Save restock record to Firebase with supplier info
+        try {
+            if (window.db) {
+                await window.addDoc(window.collection('restocks'), {
+                    drugId: drug.id,
+                    drugName: drug.name,
+                    quantityAdded: quantityToAdd,
+                    supplier: supplier || 'Unknown',
+                    timestamp: new Date().toISOString(),
+                    newQuantity: drug.quantity
+                });
+            }
+        } catch (e) {
+            console.error('Failed to save restock record:', e.message);
+        }
+
         alert("Successfully restocked " + drug.name + " with " + quantityToAdd + " units. New stock: " + drug.quantity);
-        
+
         restockForm.reset();
-        document.getElementById("restockCurrentStock").value = '';
-        
+        const restockCurrentStock = document.getElementById("restockCurrentStock");
+        if (restockCurrentStock) restockCurrentStock.value = '';
+
         renderRestockPage();
     });
 }
@@ -1485,46 +1531,78 @@ function clearExpensesFilter() {
     updateExpensesStats();
 }
 
-// ===== Utilities =====
-function formatKsh(amount) {
-    return "KSh " + (amount ?? 0).toLocaleString("en-KE", { minimumFractionDigits: 2 });
+// ===== Expiry Page =====
+function renderExpiryPage() {
+    const expiryBody = document.getElementById('expiryBody');
+    if (!expiryBody) return;
+
+    expiryBody.innerHTML = '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const sortedDrugs = [...allDrugs].sort((a, b) => {
+        const dateA = new Date(a.expiry || '2099-12-31');
+        const dateB = new Date(b.expiry || '2099-12-31');
+        return dateA - dateB;
+    });
+
+    sortedDrugs.forEach(drug => {
+        const expiryDate = drug.expiry ? new Date(drug.expiry) : null;
+        const daysLeft = expiryDate ? Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24)) : null;
+
+        let status = 'ok';
+        let statusText = 'OK';
+        if (!expiryDate) {
+            status = 'ok';
+            statusText = 'No Expiry';
+        } else if (daysLeft < 0) {
+            status = 'expired';
+            statusText = 'Expired';
+        } else if (daysLeft <= 30) {
+            status = 'soon';
+            statusText = 'Expiring Soon';
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML =
+            '<td><strong>' + (drug.name || 'N/A') + '</strong></td>' +
+            '<td>' + (drug.quantity ?? 0) + '</td>' +
+            '<td>' + (drug.expiry || 'N/A') + '</td>' +
+            '<td>' + (daysLeft !== null ? daysLeft + ' days' : 'N/A') + '</td>' +
+            '<td><span class="status-badge status-' + status + '">' + statusText + '</span></td>';
+        expiryBody.appendChild(row);
+    });
+
+    if (sortedDrugs.length === 0) {
+        expiryBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:40px;">No drugs in inventory</td></tr>';
+    }
+
+    // Add filter functionality
+    const filterButtons = document.querySelectorAll('#expiry-page .filter-btn');
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterExpiryRows(btn.dataset.filter);
+        });
+    });
 }
 
-// ===== Role-Based Access Control =====
-function updateNavByRole() {
-    const isUserAdmin = isAdmin();
-    
-    const userNav = document.getElementById('userNavItems');
-    const adminNav = document.getElementById('adminNavItems');
-    if (userNav) userNav.style.display = isUserAdmin ? 'none' : 'flex';
-    if (adminNav) adminNav.style.display = isUserAdmin ? 'flex' : 'none';
-    
-    document.getElementById('userInfoName').textContent = isUserAdmin ? 'Admin User' : 'Chemist User';
-    
-    const addDrugBtn = document.getElementById('addDrugNavBtn');
-    if (addDrugBtn) {
-        addDrugBtn.style.display = isUserAdmin ? 'flex' : 'none';
-    }
-    
-    const inventoryAddBtn = document.getElementById('inventoryAddBtn');
-    if (inventoryAddBtn) {
-        inventoryAddBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
-    }
-    
-    const servicesNavBtn = document.getElementById('servicesNavBtn');
-    if (servicesNavBtn) {
-        servicesNavBtn.style.display = isUserAdmin ? 'flex' : 'none';
-    }
-    
-    const addServiceBtn = document.getElementById('addServiceBtn');
-    if (addServiceBtn) {
-        addServiceBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
-    }
+function filterExpiryRows(filter) {
+    const rows = document.querySelectorAll('#expiryBody tr');
+    rows.forEach(row => {
+        if (filter === 'all') {
+            row.style.display = '';
+            return;
+        }
+        const statusBadge = row.querySelector('.status-badge');
+        if (!statusBadge) return;
 
-    const expensesAddBtn = document.getElementById('expensesAddBtn');
-    if (expensesAddBtn) {
-        expensesAddBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
-    }
+        const status = statusBadge.classList.contains('status-expired') ? 'expired' :
+                      statusBadge.classList.contains('status-soon') ? 'soon' : 'ok';
+
+        row.style.display = status === filter ? '' : 'none';
+    });
 }
 
 // ===== Make functions global =====
