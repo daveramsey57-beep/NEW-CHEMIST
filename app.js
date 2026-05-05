@@ -1485,19 +1485,6 @@ function clearExpensesFilter() {
     updateExpensesStats();
 }
 
-// Add event listeners for expense filters
-document.addEventListener('DOMContentLoaded', () => {
-    const filterExpensesBtn = document.getElementById('filterExpensesBtn');
-    const clearExpensesFilterBtn = document.getElementById('clearExpensesFilterBtn');
-
-    if (filterExpensesBtn) {
-        filterExpensesBtn.addEventListener('click', filterExpenses);
-    }
-    if (clearExpensesFilterBtn) {
-        clearExpensesFilterBtn.addEventListener('click', clearExpensesFilter);
-    }
-});
-
 // ===== Utilities =====
 function formatKsh(amount) {
     return "KSh " + (amount ?? 0).toLocaleString("en-KE", { minimumFractionDigits: 2 });
@@ -1533,6 +1520,11 @@ function updateNavByRole() {
     if (addServiceBtn) {
         addServiceBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
     }
+
+    const expensesAddBtn = document.getElementById('expensesAddBtn');
+    if (expensesAddBtn) {
+        expensesAddBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
+    }
 }
 
 // ===== Make functions global =====
@@ -1559,6 +1551,13 @@ window.sellService = sellService;
 window.viewReceipt = viewReceipt;
 window.closeReceiptModal = closeReceiptModal;
 window.printReceipt = printReceipt;
+window.showAddExpenseModal = showAddExpenseModal;
+window.editExpense = editExpense;
+window.deleteExpense = deleteExpense;
+window.closeExpenseModal = closeExpenseModal;
+window.saveExpense = saveExpense;
+window.filterExpenses = filterExpenses;
+window.clearExpensesFilter = clearExpensesFilter;
 
 // ===== Mobile menu handler =====
 function handleMobileMenu() {
@@ -1755,24 +1754,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addGlitchEffect();
     }, 500);
 });
-
-// Add cyber-scan line effect
-function addScanLine() {
-    const scanLine = document.createElement('div');
-    scanLine.style.cssText = 'position:fixed;top:-100%;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,rgba(2,132,199,0.5),transparent);z-index:9999;pointer-events:none;';
-    document.body.appendChild(scanLine);
-
-    setInterval(() => {
-        scanLine.style.transition = 'top 2s linear';
-        scanLine.style.top = '100%';
-        setTimeout(() => {
-            scanLine.style.transition = 'none';
-            scanLine.style.top = '-100%';
-        }, 2000);
-    }, 5000);
-}
-
-addScanLine();
 
 // Data stream effect for table rows
 function addDataStreamEffect() {
